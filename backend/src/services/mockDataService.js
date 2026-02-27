@@ -188,6 +188,56 @@ class MockDataService {
     return true;
   }
 
+  createCategory(monthId, { name, percentage, color }) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    const newCategory = {
+      id: `cat-${Date.now()}`,
+      name,
+      percentage,
+      budget: Math.round((monthData.salary * percentage) / 100),
+      color: color || 'chart-1',
+      items: [],
+    };
+
+    monthData.categories.push(newCategory);
+    this.saveData();
+    return newCategory;
+  }
+
+  updateCategory(monthId, categoryId, { name, percentage, color }) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    const index = monthData.categories.findIndex(c => c.id === categoryId);
+    if (index === -1) return null;
+
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (color !== undefined) updates.color = color;
+    if (percentage !== undefined) {
+      updates.percentage = percentage;
+      updates.budget = Math.round((monthData.salary * percentage) / 100);
+    }
+
+    monthData.categories[index] = { ...monthData.categories[index], ...updates };
+    this.saveData();
+    return monthData.categories[index];
+  }
+
+  deleteCategory(monthId, categoryId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return false;
+
+    const index = monthData.categories.findIndex(c => c.id === categoryId);
+    if (index === -1) return false;
+
+    monthData.categories.splice(index, 1);
+    this.saveData();
+    return true;
+  }
+
   createItem(monthId, categoryId, item) {
     const monthData = this.getById(monthId);
     if (!monthData) return null;

@@ -3,6 +3,7 @@
 import { useFinance } from "@/lib/finance-context"
 import { formatCOP, getMonthLabel } from "@/lib/financial-data"
 import { MonthSidebar } from "@/components/month-sidebar"
+import { SettingsPanel } from "@/components/settings-panel"
 import { Banknote, ShoppingCart } from "lucide-react"
 
 export function SalaryHeader() {
@@ -53,6 +54,7 @@ export function SalaryHeader() {
             </div>
           </div>
         ))}
+        <SettingsPanel />
       </div>
     </header>
   )

@@ -61,6 +61,18 @@ class MonthDataService {
     return mockDataService.deleteSubcategory(id);
   }
 
+  async createCategory(monthId, data) {
+    return mockDataService.createCategory(monthId, data);
+  }
+
+  async updateCategory(monthId, categoryId, data) {
+    return mockDataService.updateCategory(monthId, categoryId, data);
+  }
+
+  async deleteCategory(monthId, categoryId) {
+    return mockDataService.deleteCategory(monthId, categoryId);
+  }
+
   async updateItem(monthId, categoryId, itemId, updates) {
     return mockDataService.updateItem(monthId, categoryId, itemId, updates);
   }

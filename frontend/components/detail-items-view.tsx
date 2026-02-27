@@ -9,7 +9,7 @@ import {
   getUsagePercentage,
 } from "@/lib/financial-data"
 import type { BudgetCategory, ExpenseItem } from "@/lib/financial-data"
-import { ItemIcon, AVAILABLE_ICONS } from "@/components/item-icon"
+import { ItemIcon } from "@/components/item-icon"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -158,19 +158,22 @@ function EditableRow({
 
 // Add item dialog per category
 function AddItemDialog({ category }: { category: BudgetCategory }) {
-  const { addItem } = useFinance()
+  const { addItem, subcategories } = useFinance()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [amount, setAmount] = useState("")
-  const [icon, setIcon] = useState("CircleDollarSign")
+  const [subcatId, setSubcatId] = useState("")
+
+  const catSubs = subcategories.filter((s) => s.categoriaPadreId === category.id)
 
   function handleAdd() {
     const a = parseInt(amount, 10)
     if (!name.trim() || isNaN(a)) return
-    addItem(category.id, name.trim(), a, icon)
+    const selectedSub = catSubs.find((s) => s.id === subcatId)
+    addItem(category.id, name.trim(), a, selectedSub?.icon)
     setName("")
     setAmount("")
-    setIcon("CircleDollarSign")
+    setSubcatId("")
     setOpen(false)
   }
 
@@ -187,19 +190,33 @@ function AddItemDialog({ category }: { category: BudgetCategory }) {
           <DialogTitle>Agregar a {category.name}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Icono</label>
-            <Select value={icon} onValueChange={setIcon}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-52">
-                {AVAILABLE_ICONS.map((ic) => (
-                  <SelectItem key={ic} value={ic}>{ic}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {catSubs.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Subcategoría</label>
+              <Select
+                value={subcatId}
+                onValueChange={(val) => {
+                  setSubcatId(val)
+                  const sub = catSubs.find((s) => s.id === val)
+                  if (sub) setName(sub.name)
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {catSubs.map((sub) => (
+                    <SelectItem key={sub.id} value={sub.id}>
+                      <span className="flex items-center gap-2">
+                        <ItemIcon icon={sub.icon} categoryColor={category.color} size="sm" />
+                        {sub.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Nombre</label>
             <Input

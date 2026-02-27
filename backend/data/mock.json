@@ -25,7 +25,7 @@
         {
           "id": "vivienda-1",
           "name": "Arriendo",
-          "amount": 60000,
+          "amount": 600000,
           "icon": "Home"
         },
         {
@@ -35,10 +35,10 @@
           "icon": "Zap"
         },
         {
-          "id": "vivienda-1772230737384",
-          "name": "recibo de internet",
-          "amount": 100000,
-          "icon": "Wifi",
+          "id": "vivienda-1772233627828",
+          "name": "Recarga Celular",
+          "amount": 20000,
+          "icon": "Zap",
           "subcategoriaId": null
         }
       ]
@@ -61,12 +61,6 @@
           "name": "Las Panas (Mascotas)",
           "amount": 300000,
           "icon": "PawPrint"
-        },
-        {
-          "id": "gp-3",
-          "name": "Ropa",
-          "amount": 0,
-          "icon": "Shirt"
         },
         {
           "id": "gp-4",
@@ -137,13 +131,13 @@
         {
           "id": "div-2",
           "name": "Gimnasio",
-          "amount": 1890000,
+          "amount": 100000,
           "icon": "Dumbbell"
         },
         {
           "id": "div-3",
           "name": "Partner (Clases de tennis)",
-          "amount": 500000,
+          "amount": 160000,
           "icon": "Trophy"
         },
         {
@@ -151,12 +145,6 @@
           "name": "Gasolina (Carro)",
           "amount": 100000,
           "icon": "Fuel"
-        },
-        {
-          "id": "div-5",
-          "name": "Lavado (Carro)",
-          "amount": 0,
-          "icon": "Car"
         }
       ]
     },

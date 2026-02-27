@@ -19,6 +19,13 @@ export interface WeeklyBudget {
   amount: number
 }
 
+export interface Subcategory {
+  id: string
+  name: string
+  icon?: string
+  categoriaPadreId: string
+}
+
 export interface SavingsEntry {
   id: string
   name: string

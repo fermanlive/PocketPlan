@@ -8,7 +8,7 @@ import {
   getUsagePercentage,
 } from "@/lib/financial-data"
 import type { BudgetCategory, ExpenseItem } from "@/lib/financial-data"
-import { ItemIcon, AVAILABLE_ICONS } from "@/components/item-icon"
+import { ItemIcon } from "@/components/item-icon"
 import { useFinance } from "@/lib/finance-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -154,11 +154,13 @@ function InlineEditRow({
 }
 
 export function BudgetCategoryCard({ category }: BudgetCategoryCardProps) {
-  const { addItem } = useFinance()
+  const { addItem, subcategories } = useFinance()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newName, setNewName] = useState("")
   const [newAmount, setNewAmount] = useState("")
-  const [newIcon, setNewIcon] = useState("CircleDollarSign")
+  const [newSubcatId, setNewSubcatId] = useState("")
+
+  const catSubs = subcategories.filter((s) => s.categoriaPadreId === category.id)
 
   const total = getCategoryTotal(category)
   const remaining = getCategoryRemaining(category)
@@ -168,10 +170,11 @@ export function BudgetCategoryCard({ category }: BudgetCategoryCardProps) {
   function handleAdd() {
     const a = parseInt(newAmount, 10)
     if (!newName.trim() || isNaN(a)) return
-    addItem(category.id, newName.trim(), a, newIcon)
+    const selectedSub = catSubs.find((s) => s.id === newSubcatId)
+    addItem(category.id, newName.trim(), a, selectedSub?.icon)
     setNewName("")
     setNewAmount("")
-    setNewIcon("CircleDollarSign")
+    setNewSubcatId("")
     setDialogOpen(false)
   }
 
@@ -233,19 +236,33 @@ export function BudgetCategoryCard({ category }: BudgetCategoryCardProps) {
               <DialogTitle>Agregar a {category.name}</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4 py-2">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-muted-foreground">Icono</label>
-                <Select value={newIcon} onValueChange={setNewIcon}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-52">
-                    {AVAILABLE_ICONS.map((ic) => (
-                      <SelectItem key={ic} value={ic}>{ic}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {catSubs.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground">Subcategoría</label>
+                  <Select
+                    value={newSubcatId}
+                    onValueChange={(val) => {
+                      setNewSubcatId(val)
+                      const sub = catSubs.find((s) => s.id === val)
+                      if (sub) setNewName(sub.name)
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {catSubs.map((sub) => (
+                        <SelectItem key={sub.id} value={sub.id}>
+                          <span className="flex items-center gap-2">
+                            <ItemIcon icon={sub.icon} categoryColor={category.color} size="sm" />
+                            {sub.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">Nombre</label>
                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Internet" />

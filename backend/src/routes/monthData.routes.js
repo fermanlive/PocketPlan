@@ -110,6 +110,52 @@ router.get('/month-data/:id/savings', async (req, res) => {
   }
 });
 
+router.post('/month-data/:monthId/categories', async (req, res) => {
+  try {
+    const { monthId } = req.params;
+    const { name, percentage, color } = req.body;
+
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (percentage === undefined || percentage < 0 || percentage > 100) {
+      return res.status(400).json({ error: 'percentage must be between 0 and 100' });
+    }
+
+    const category = await monthDataService.createCategory(monthId, { name, percentage, color });
+    if (!category) return res.status(404).json({ error: 'Month not found' });
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/month-data/:monthId/categories/:catId', async (req, res) => {
+  try {
+    const { monthId, catId } = req.params;
+    const { name, percentage, color } = req.body;
+
+    if (percentage !== undefined && (percentage < 0 || percentage > 100)) {
+      return res.status(400).json({ error: 'percentage must be between 0 and 100' });
+    }
+
+    const category = await monthDataService.updateCategory(monthId, catId, { name, percentage, color });
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/month-data/:monthId/categories/:catId', async (req, res) => {
+  try {
+    const { monthId, catId } = req.params;
+    const deleted = await monthDataService.deleteCategory(monthId, catId);
+    if (!deleted) return res.status(404).json({ error: 'Category not found' });
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.put('/month-data/:monthId/categories/:categoryId/items/:itemId', async (req, res) => {
   try {
     const { monthId, categoryId, itemId } = req.params;
