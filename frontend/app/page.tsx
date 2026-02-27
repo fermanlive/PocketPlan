@@ -30,13 +30,13 @@ function Dashboard() {
               <LayoutDashboard className="h-3.5 w-3.5" />
               Resumen
             </TabsTrigger>
-            <TabsTrigger
+            {/* <TabsTrigger
               value="detalle"
               className="gap-2 rounded-full px-4 py-1.5 text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background"
             >
               <ListTodo className="h-3.5 w-3.5" />
               Detalle
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger
               value="ahorros"
               className="gap-2 rounded-full px-4 py-1.5 text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background"

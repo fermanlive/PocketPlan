@@ -105,8 +105,8 @@ export function createDefaultMonth(year: number, month: number, salary: number):
       },
     ],
     weeklyBudgets: [
-      { label: "Semana 1", amount: 350000 },
-      { label: "Semana 2", amount: 350000 },
+      { label: "Semana 1", amount: 150000 },
+      { label: "Semana 2", amount: 150000 },
     ],
     savings: [],
   }
@@ -190,8 +190,8 @@ export const initialMonths: MonthData[] = [
       },
     ],
     weeklyBudgets: [
-      { label: "Semana 1", amount: 350000 },
-      { label: "Semana 2", amount: 350000 },
+      { label: "Semana 1", amount: 150000 },
+      { label: "Semana 2", amount: 150000 },
     ],
     savings: [
       { id: "s1", name: "Fondo emergencia", amount: 500000, date: "2025-11-01" },
