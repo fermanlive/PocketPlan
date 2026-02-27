@@ -1,0 +1,25 @@
+{
+  "subcategories": [
+    { "id": "arriendo", "name": "Arriendo", "icon": "Home", "categoriaPadreId": "vivienda" },
+    { "id": "servicios", "name": "Servicios", "icon": "Zap", "categoriaPadreId": "vivienda" },
+    { "id": "mercado", "name": "Mercado", "icon": "ShoppingCart", "categoriaPadreId": "gastos-personales" },
+    { "id": "mascotas", "name": "Mascotas", "icon": "PawPrint", "categoriaPadreId": "gastos-personales" },
+    { "id": "ropa", "name": "Ropa", "icon": "Shirt", "categoriaPadreId": "gastos-personales" },
+    { "id": "empleada", "name": "Empleada", "icon": "User", "categoriaPadreId": "gastos-personales" },
+    { "id": "comidas-fuera", "name": "Comidas por fuera", "icon": "Utensils", "categoriaPadreId": "gastos-personales" },
+    { "id": "semanal", "name": "Semanal", "icon": "Calendar", "categoriaPadreId": "gastos-personales" },
+    { "id": "itau-cc", "name": "Itau CC", "icon": "PiggyBank", "categoriaPadreId": "ahorros-inv" },
+    { "id": "bancolombia-cc", "name": "Bancolombia CC", "icon": "PiggyBank", "categoriaPadreId": "ahorros-inv" },
+    { "id": "prestamo", "name": "Prestamo", "icon": "CreditCard", "categoriaPadreId": "ahorros-inv" },
+    { "id": "apoyo", "name": "Apoyo", "icon": "Heart", "categoriaPadreId": "diversion" },
+    { "id": "gimnasio", "name": "Gimnasio", "icon": "Dumbbell", "categoriaPadreId": "diversion" },
+    { "id": "deportes", "name": "Deportes", "icon": "Trophy", "categoriaPadreId": "diversion" },
+    { "id": "gasolina", "name": "Gasolina", "icon": "Fuel", "categoriaPadreId": "diversion" },
+    { "id": "lavado-carro", "name": "Lavado Carro", "icon": "Car", "categoriaPadreId": "diversion" },
+    { "id": "emergencia-medica", "name": "Emergencia medica", "icon": "HeartPulse", "categoriaPadreId": "imprevistos" },
+    { "id": "reparaciones", "name": "Reparaciones", "icon": "Wrench", "categoriaPadreId": "imprevistos" },
+    { "id": "transporte-extra", "name": "Transporte extra", "icon": "Bus", "categoriaPadreId": "imprevistos" },
+    { "id": "farmacia", "name": "Farmacia", "icon": "Pill", "categoriaPadreId": "imprevistos" },
+    { "id": "otros", "name": "Otros", "icon": "MoreHorizontal", "categoriaPadreId": "imprevistos" }
+  ]
+}
