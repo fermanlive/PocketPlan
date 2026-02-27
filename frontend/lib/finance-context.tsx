@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   useCallback,
   type ReactNode,
 } from "react"
@@ -14,10 +15,14 @@ import {
   generateItemId,
 } from "@/lib/financial-data"
 
+const API_URL = "http://localhost:4000/api/month-data"
+
 interface FinanceContextValue {
   months: MonthData[]
   activeMonthId: string
   activeMonth: MonthData
+  isLoading: boolean
+  error: string | null
   setActiveMonthId: (id: string) => void
   addMonth: (year: number, month: number, salary: number) => void
   deleteMonth: (id: string) => void
@@ -28,6 +33,7 @@ interface FinanceContextValue {
   removeSavingsEntry: (id: string) => void
   updateSalary: (salary: number) => void
   updateWeeklyBudget: (index: number, amount: number) => void
+  refetchData: () => Promise<void>
 }
 
 const FinanceContext = createContext<FinanceContextValue | null>(null)
@@ -41,6 +47,33 @@ export function useFinance() {
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const [months, setMonths] = useState<MonthData[]>(initialMonths)
   const [activeMonthId, setActiveMonthId] = useState(initialMonths[0].id)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchMonthData = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(API_URL)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data: MonthData[] = await response.json()
+      if (data.length > 0) {
+        setMonths(data)
+        setActiveMonthId(data[0].id)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch data")
+      console.error("Error fetching month data:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchMonthData()
+  }, [fetchMonthData])
 
   const activeMonth = months.find((m) => m.id === activeMonthId) ?? months[0]
 
@@ -182,6 +215,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         months,
         activeMonthId,
         activeMonth,
+        isLoading,
+        error,
         setActiveMonthId,
         addMonth,
         deleteMonth,
@@ -192,6 +227,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         removeSavingsEntry,
         updateSalary,
         updateWeeklyBudget,
+        refetchData: fetchMonthData,
       }}
     >
       {children}

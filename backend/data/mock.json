@@ -17,8 +17,7 @@
       "color": "chart-1",
       "items": [
         { "id": "vivienda-1", "name": "Arriendo", "amount": 700000, "icon": "Home" },
-        { "id": "vivienda-2", "name": "Servicios", "amount": 300000, "icon": "Zap" },
-        { "id": "vivienda-3", "name": "Prestamo Nov", "amount": 1000000, "icon": "CreditCard" }
+        { "id": "vivienda-2", "name": "Servicios", "amount": 300000, "icon": "Zap" }
       ]
     },
     {

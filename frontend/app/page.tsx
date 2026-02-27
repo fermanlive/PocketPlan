@@ -12,7 +12,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LayoutDashboard, ListTodo, PiggyBank } from "lucide-react"
 
 function Dashboard() {
-  const { activeMonth } = useFinance()
+  const { activeMonth, isLoading, error } = useFinance()
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Cargando datos...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="text-destructive">Error: {error}</p>
+          <p className="text-muted-foreground">Verifica que el servidor API esté corriendo en http://localhost:4000</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
