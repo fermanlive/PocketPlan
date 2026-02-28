@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Trash2, Pencil, Check, X, TrendingDown, TrendingUp } from "lucide-react"
+import { Plus, Trash2, Pencil, Check, X, TrendingDown, TrendingUp, Repeat } from "lucide-react"
 
 interface BudgetCategoryCardProps {
   category: BudgetCategory
@@ -71,17 +71,19 @@ function InlineEditRow({
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(item.name)
   const [editAmount, setEditAmount] = useState(String(item.amount))
+  const [editPeriodic, setEditPeriodic] = useState(item.periodic ?? false)
 
   function save() {
     const a = parseInt(editAmount, 10)
     if (!editName.trim() || isNaN(a)) return
-    updateItem(categoryId, { ...item, name: editName.trim(), amount: a })
+    updateItem(categoryId, { ...item, name: editName.trim(), amount: a, periodic: editPeriodic })
     setEditing(false)
   }
 
   function cancel() {
     setEditName(item.name)
     setEditAmount(String(item.amount))
+    setEditPeriodic(item.periodic ?? false)
     setEditing(false)
   }
 
@@ -101,6 +103,16 @@ function InlineEditRow({
           onChange={(e) => setEditAmount(e.target.value)}
           className="h-7 w-28 text-right text-sm font-mono"
         />
+        <button
+          onClick={() => setEditPeriodic((p) => !p)}
+          title="Item periódico"
+          className={cn(
+            "shrink-0 rounded p-1 transition-colors",
+            editPeriodic ? "text-blue-500" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Repeat className="h-3.5 w-3.5" />
+        </button>
         <button
           onClick={save}
           className="shrink-0 rounded p-1 text-accent hover:bg-accent/10"
@@ -124,6 +136,9 @@ function InlineEditRow({
       <ItemIcon icon={item.icon} categoryColor={categoryColor} size="sm" />
       <span className="flex-1 text-sm text-foreground leading-tight">{item.name}</span>
       <div className="flex items-center gap-1.5">
+        {item.periodic && (
+          <Repeat className="h-3 w-3 text-blue-500 shrink-0" />
+        )}
         <span
           className={cn(
             "text-sm font-mono font-semibold",

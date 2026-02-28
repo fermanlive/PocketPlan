@@ -3,6 +3,7 @@ export interface ExpenseItem {
   name: string
   amount: number
   icon?: string
+  periodic?: boolean
 }
 
 export interface BudgetCategory {

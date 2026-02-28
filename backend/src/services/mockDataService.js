@@ -6,7 +6,7 @@ const subcategoriesPath = path.join(__dirname, '../../data/subcategories.json');
 
 class MockDataService {
   constructor() {
-    this.data = null;
+    this.months = [];
     this.subcategories = null;
     this.loadData();
     this.loadSubcategories();
@@ -15,10 +15,11 @@ class MockDataService {
   loadData() {
     try {
       const fileContent = fs.readFileSync(mockDataPath, 'utf8');
-      this.data = JSON.parse(fileContent);
+      const parsed = JSON.parse(fileContent);
+      this.months = Array.isArray(parsed) ? parsed : [parsed];
     } catch (error) {
       console.error('Error loading mock data:', error.message);
-      this.data = null;
+      this.months = [];
     }
   }
 
@@ -34,7 +35,7 @@ class MockDataService {
 
   saveData() {
     try {
-      fs.writeFileSync(mockDataPath, JSON.stringify(this.data, null, 2), 'utf8');
+      fs.writeFileSync(mockDataPath, JSON.stringify(this.months, null, 2), 'utf8');
     } catch (error) {
       console.error('Error saving mock data:', error.message);
       throw error;
@@ -51,19 +52,19 @@ class MockDataService {
   }
 
   getAll() {
-    return this.data ? [this.data] : [];
+    return this.months;
   }
 
   getById(id) {
-    return this.data && this.data.id === id ? this.data : null;
+    return this.months.find(m => m.id === id) || null;
   }
 
   getByYear(year) {
-    return this.data && this.data.year === year ? [this.data] : [];
+    return this.months.filter(m => m.year === year);
   }
 
   getByYearMonth(year, month) {
-    return this.data && this.data.year === year && this.data.month === month ? this.data : null;
+    return this.months.find(m => m.year === year && m.month === month) || null;
   }
 
   getCategoriesByMonth(id) {
@@ -110,20 +111,20 @@ class MockDataService {
   }
 
   getSubcategoriesByCategory(categoriaPadreId) {
-    return this.subcategories 
+    return this.subcategories
       ? this.subcategories.filter(s => s.categoriaPadreId === categoriaPadreId)
       : [];
   }
 
   getSubcategoryById(id) {
-    return this.subcategories 
+    return this.subcategories
       ? this.subcategories.find(s => s.id === id)
       : null;
   }
 
   createSubcategory(subcategory) {
     if (!this.subcategories) this.subcategories = [];
-    
+
     const exists = this.subcategories.find(s => s.id === subcategory.id);
     if (exists) {
       throw new Error('Subcategory already exists');
@@ -238,6 +239,48 @@ class MockDataService {
     return true;
   }
 
+  createSaving(monthId, saving) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    if (!Array.isArray(monthData.savings)) monthData.savings = [];
+
+    const newSaving = {
+      id: `saving-${Date.now()}`,
+      name: saving.name || 'Ahorro',
+      amount: saving.amount || 0,
+      date: saving.date || new Date().toISOString().split('T')[0],
+    };
+
+    monthData.savings.push(newSaving);
+    this.saveData();
+    return newSaving;
+  }
+
+  updateSaving(monthId, savingId, updates) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    const index = monthData.savings.findIndex(s => s.id === savingId);
+    if (index === -1) return null;
+
+    monthData.savings[index] = { ...monthData.savings[index], ...updates };
+    this.saveData();
+    return monthData.savings[index];
+  }
+
+  deleteSaving(monthId, savingId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return false;
+
+    const index = monthData.savings.findIndex(s => s.id === savingId);
+    if (index === -1) return false;
+
+    monthData.savings.splice(index, 1);
+    this.saveData();
+    return true;
+  }
+
   createItem(monthId, categoryId, item) {
     const monthData = this.getById(monthId);
     if (!monthData) return null;
@@ -262,6 +305,77 @@ class MockDataService {
     category.items.push(newItem);
     this.saveData();
     return newItem;
+  }
+
+  createMonth(year, month, salary) {
+    const monthId = `${year}-${String(month).padStart(2, '0')}`;
+
+    if (this.months.some(m => m.id === monthId)) {
+      throw new Error(`Month ${monthId} already exists`);
+    }
+
+    const p = (pct) => Math.round((salary * pct) / 100);
+    const defaultCategories = [
+      { id: 'vivienda', name: 'Vivienda', percentage: 25, budget: p(25), color: 'chart-1', items: [] },
+      { id: 'gastos-personales', name: 'Gastos Personales', percentage: 30, budget: p(30), color: 'chart-2', items: [] },
+      { id: 'ahorros-inv', name: 'Ahorros e Inversiones', percentage: 30, budget: p(30), color: 'chart-3', items: [] },
+      { id: 'diversion', name: 'Diversión', percentage: 10, budget: p(10), color: 'chart-4', items: [] },
+      { id: 'imprevistos', name: 'Imprevistos', percentage: 5, budget: p(5), color: 'chart-5', items: [] },
+    ];
+
+    // Find most recent month before the new one
+    const newMonthNum = year * 100 + month;
+    const prevMonth = this.months
+      .filter(m => m.year * 100 + m.month < newMonthNum)
+      .sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month))[0];
+
+    // Copy periodic items from previous month into matching categories
+    if (prevMonth) {
+      prevMonth.categories.forEach(prevCat => {
+        const periodicItems = prevCat.items.filter(item => item.periodic === true);
+        if (periodicItems.length > 0) {
+          const newCat = defaultCategories.find(c => c.id === prevCat.id);
+          if (newCat) {
+            periodicItems.forEach(item => {
+              newCat.items.push({
+                id: `${prevCat.id}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                name: item.name,
+                amount: item.amount,
+                icon: item.icon,
+                periodic: true,
+                ...(item.subcategoriaId ? { subcategoriaId: item.subcategoriaId } : {}),
+              });
+            });
+          }
+        }
+      });
+    }
+
+    const newMonth = {
+      id: monthId,
+      year,
+      month,
+      salary,
+      weeklyBudgets: [
+        { label: 'Semana 1', amount: 150000 },
+        { label: 'Semana 2', amount: 150000 },
+      ],
+      savings: [],
+      categories: defaultCategories,
+    };
+
+    this.months.push(newMonth);
+    this.saveData();
+    return newMonth;
+  }
+
+  deleteMonth(id) {
+    const index = this.months.findIndex(m => m.id === id);
+    if (index === -1) return false;
+
+    this.months.splice(index, 1);
+    this.saveData();
+    return true;
   }
 }
 

@@ -30,8 +30,9 @@ interface FinanceContextValue {
   addItem: (categoryId: string, name: string, amount: number, icon?: string) => Promise<void>
   removeItem: (categoryId: string, itemId: string) => Promise<void>
   updateItem: (categoryId: string, item: ExpenseItem) => Promise<void>
-  addSavingsEntry: (entry: Omit<SavingsEntry, "id">) => void
-  removeSavingsEntry: (id: string) => void
+  addSavingsEntry: (entry: Omit<SavingsEntry, "id">) => Promise<void>
+  removeSavingsEntry: (id: string) => Promise<void>
+  updateSavingsEntry: (entry: SavingsEntry) => Promise<void>
   updateSalary: (salary: number) => void
   updateWeeklyBudget: (index: number, amount: number) => void
   refetchData: () => Promise<void>
@@ -66,10 +67,39 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      const data: MonthData[] = await response.json()
+      let data: MonthData[] = await response.json()
+
+      // Auto-create current month if missing
+      const now = new Date()
+      const currentYear = now.getFullYear()
+      const currentMonth = now.getMonth() + 1
+      const currentId = `${currentYear}-${String(currentMonth).padStart(2, "0")}`
+
+      if (data.length > 0 && !data.some((m) => m.id === currentId)) {
+        const sorted = [...data].sort(
+          (a, b) => b.year * 100 + b.month - (a.year * 100 + a.month)
+        )
+        const recentSalary = sorted[0].salary
+        try {
+          const res = await fetch(`${API_URL}/month-data`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ year: currentYear, month: currentMonth, salary: recentSalary }),
+          })
+          if (res.ok) {
+            const newMonth: MonthData = await res.json()
+            data = [...data, newMonth]
+          }
+        } catch (e) {
+          console.error("Error auto-creating current month:", e)
+        }
+      }
+
       if (data.length > 0) {
+        data.sort((a, b) => a.year * 100 + a.month - (b.year * 100 + b.month))
         setMonths(data)
-        setActiveMonthId(data[0].id)
+        const currentExists = data.some((m) => m.id === currentId)
+        setActiveMonthId(currentExists ? currentId : data[data.length - 1].id)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch data")
@@ -108,33 +138,68 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   )
 
   const addMonth = useCallback(
-    (year: number, month: number, salary: number) => {
-      const newMonth = createDefaultMonth(year, month, salary)
+    async (year: number, month: number, salary: number) => {
+      const optimisticMonth = createDefaultMonth(year, month, salary)
       setMonths((prev) => {
-        if (prev.some((m) => m.id === newMonth.id)) return prev
-        return [...prev, newMonth].sort(
+        if (prev.some((m) => m.id === optimisticMonth.id)) return prev
+        return [...prev, optimisticMonth].sort(
           (a, b) => a.year * 100 + a.month - (b.year * 100 + b.month)
         )
       })
-      setActiveMonthId(newMonth.id)
+      setActiveMonthId(optimisticMonth.id)
+
+      try {
+        const res = await fetch(`${API_URL}/month-data`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ year, month, salary }),
+        })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+        const serverMonth: MonthData = await res.json()
+        setMonths((prev) =>
+          prev
+            .map((m) => (m.id === optimisticMonth.id ? serverMonth : m))
+            .sort((a, b) => a.year * 100 + a.month - (b.year * 100 + b.month))
+        )
+      } catch (err) {
+        setMonths((prev) => prev.filter((m) => m.id !== optimisticMonth.id))
+        setError(err instanceof Error ? err.message : "Failed to add month")
+        console.error("Error adding month:", err)
+      }
     },
     []
   )
 
   const deleteMonth = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      let removedMonth: MonthData | null = null
       setMonths((prev) => {
-        const next = prev.filter((m) => m.id !== id)
-        if (next.length === 0) return prev
-        return next
+        if (prev.length <= 1) return prev
+        removedMonth = prev.find((m) => m.id === id) ?? null
+        return prev.filter((m) => m.id !== id)
       })
       setActiveMonthId((prevId) => {
         if (prevId === id) {
           const remaining = months.filter((m) => m.id !== id)
-          return remaining.length > 0 ? remaining[0].id : prevId
+          return remaining.length > 0 ? remaining[remaining.length - 1].id : prevId
         }
         return prevId
       })
+
+      try {
+        const res = await fetch(`${API_URL}/month-data/${id}`, { method: "DELETE" })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (removedMonth) {
+          setMonths((prev) =>
+            [...prev, removedMonth!].sort(
+              (a, b) => a.year * 100 + a.month - (b.year * 100 + b.month)
+            )
+          )
+        }
+        setError(err instanceof Error ? err.message : "Failed to delete month")
+        console.error("Error deleting month:", err)
+      }
     },
     [months]
   )
@@ -255,7 +320,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: item.name, amount: item.amount, icon: item.icon }),
+            body: JSON.stringify({ name: item.name, amount: item.amount, icon: item.icon, periodic: item.periodic }),
           }
         )
         if (!response.ok) {
@@ -280,23 +345,99 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   )
 
   const addSavingsEntry = useCallback(
-    (entry: Omit<SavingsEntry, "id">) => {
+    async (entry: Omit<SavingsEntry, "id">) => {
+      const tempId = `saving-temp-${Date.now()}`
+      const tempEntry: SavingsEntry = { ...entry, id: tempId }
       updateActiveMonth((m) => ({
         ...m,
-        savings: [...m.savings, { ...entry, id: generateItemId() }],
+        savings: [...m.savings, tempEntry],
       }))
+
+      try {
+        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/savings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry),
+        })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+        const serverEntry: SavingsEntry = await res.json()
+        updateActiveMonth((m) => ({
+          ...m,
+          savings: m.savings.map((s) => (s.id === tempId ? serverEntry : s)),
+        }))
+      } catch (err) {
+        updateActiveMonth((m) => ({
+          ...m,
+          savings: m.savings.filter((s) => s.id !== tempId),
+        }))
+        setError(err instanceof Error ? err.message : "Failed to add saving")
+        console.error("Error adding saving:", err)
+      }
     },
-    [updateActiveMonth]
+    [updateActiveMonth, activeMonthId]
   )
 
   const removeSavingsEntry = useCallback(
-    (id: string) => {
-      updateActiveMonth((m) => ({
-        ...m,
-        savings: m.savings.filter((s) => s.id !== id),
-      }))
+    async (id: string) => {
+      let removedEntry: SavingsEntry | null = null
+      updateActiveMonth((m) => {
+        removedEntry = m.savings.find((s) => s.id === id) ?? null
+        return { ...m, savings: m.savings.filter((s) => s.id !== id) }
+      })
+
+      try {
+        const res = await fetch(
+          `${API_URL}/month-data/${activeMonthId}/savings/${id}`,
+          { method: "DELETE" }
+        )
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (removedEntry) {
+          updateActiveMonth((m) => ({
+            ...m,
+            savings: [...m.savings, removedEntry!],
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to remove saving")
+        console.error("Error removing saving:", err)
+      }
     },
-    [updateActiveMonth]
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const updateSavingsEntry = useCallback(
+    async (entry: SavingsEntry) => {
+      let previousEntry: SavingsEntry | null = null
+      updateActiveMonth((m) => {
+        previousEntry = m.savings.find((s) => s.id === entry.id) ?? null
+        return {
+          ...m,
+          savings: m.savings.map((s) => (s.id === entry.id ? entry : s)),
+        }
+      })
+
+      try {
+        const res = await fetch(
+          `${API_URL}/month-data/${activeMonthId}/savings/${entry.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: entry.name, amount: entry.amount, date: entry.date }),
+          }
+        )
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (previousEntry) {
+          updateActiveMonth((m) => ({
+            ...m,
+            savings: m.savings.map((s) => (s.id === entry.id ? previousEntry! : s)),
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to update saving")
+        console.error("Error updating saving:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
   )
 
   const updateSalary = useCallback(
@@ -504,6 +645,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         updateItem,
         addSavingsEntry,
         removeSavingsEntry,
+        updateSavingsEntry,
         updateSalary,
         updateWeeklyBudget,
         refetchData: fetchMonthData,

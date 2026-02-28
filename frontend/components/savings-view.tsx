@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useFinance } from "@/lib/finance-context"
+import type { SavingsEntry } from "@/lib/financial-data"
 import { formatCOP } from "@/lib/financial-data"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,13 +15,23 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Trash2, PiggyBank, TrendingUp } from "lucide-react"
+import { Plus, Trash2, PiggyBank, TrendingUp, Pencil } from "lucide-react"
 
 export function SavingsView() {
-  const { activeMonth, addSavingsEntry, removeSavingsEntry } = useFinance()
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const { activeMonth, addSavingsEntry, removeSavingsEntry, updateSavingsEntry } = useFinance()
+
+  // Add dialog state
+  const [addOpen, setAddOpen] = useState(false)
   const [name, setName] = useState("")
   const [amount, setAmount] = useState("")
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false)
+  const [editEntry, setEditEntry] = useState<SavingsEntry | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editAmount, setEditAmount] = useState("")
+  const [editDate, setEditDate] = useState("")
 
   const totalSavings = activeMonth.savings.reduce((s, e) => s + e.amount, 0)
 
@@ -30,11 +41,29 @@ export function SavingsView() {
     addSavingsEntry({
       name: name.trim(),
       amount: a,
-      date: new Date().toISOString().split("T")[0],
+      date: date || new Date().toISOString().split("T")[0],
     })
     setName("")
     setAmount("")
-    setDialogOpen(false)
+    setDate(new Date().toISOString().split("T")[0])
+    setAddOpen(false)
+  }
+
+  function openEdit(entry: SavingsEntry) {
+    setEditEntry(entry)
+    setEditName(entry.name)
+    setEditAmount(String(entry.amount))
+    setEditDate(entry.date)
+    setEditOpen(true)
+  }
+
+  function handleEdit() {
+    if (!editEntry) return
+    const a = parseInt(editAmount, 10)
+    if (!editName.trim() || isNaN(a) || a < 0) return
+    updateSavingsEntry({ ...editEntry, name: editName.trim(), amount: a, date: editDate })
+    setEditOpen(false)
+    setEditEntry(null)
   }
 
   return (
@@ -70,7 +99,7 @@ export function SavingsView() {
       </div>
 
       {/* Add button */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" className="w-fit gap-2 rounded-xl">
             <Plus className="h-4 w-4" />
@@ -83,9 +112,7 @@ export function SavingsView() {
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Nombre
-              </label>
+              <label className="text-xs font-medium text-muted-foreground">Nombre</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -93,9 +120,7 @@ export function SavingsView() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Monto
-              </label>
+              <label className="text-xs font-medium text-muted-foreground">Monto</label>
               <Input
                 type="number"
                 value={amount}
@@ -103,12 +128,60 @@ export function SavingsView() {
                 placeholder="500000"
               />
             </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Fecha</label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>
               Cancelar
             </Button>
             <Button onClick={handleAdd}>Agregar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar ahorro</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Nombre</label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Monto</label>
+              <Input
+                type="number"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Fecha</label>
+              <Input
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEdit}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -145,6 +218,13 @@ export function SavingsView() {
               >
                 {formatCOP(entry.amount)}
               </span>
+              <button
+                onClick={() => openEdit(entry)}
+                className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-primary group-hover:opacity-100"
+                aria-label={`Editar ${entry.name}`}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
               <button
                 onClick={() => removeSavingsEntry(entry.id)}
                 className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"

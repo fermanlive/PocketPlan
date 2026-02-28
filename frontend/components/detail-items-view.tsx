@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Trash2, Pencil, Check, X } from "lucide-react"
+import { Plus, Trash2, Pencil, Check, X, Repeat } from "lucide-react"
 
 const colorMap: Record<string, string> = {
   "chart-1": "bg-chart-1",
@@ -60,17 +60,19 @@ function EditableRow({
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(item.name)
   const [editAmount, setEditAmount] = useState(String(item.amount))
+  const [editPeriodic, setEditPeriodic] = useState(item.periodic ?? false)
 
   function save() {
     const a = parseInt(editAmount, 10)
     if (!editName.trim() || isNaN(a)) return
-    updateItem(categoryId, { ...item, name: editName.trim(), amount: a })
+    updateItem(categoryId, { ...item, name: editName.trim(), amount: a, periodic: editPeriodic })
     setEditing(false)
   }
 
   function cancel() {
     setEditName(item.name)
     setEditAmount(String(item.amount))
+    setEditPeriodic(item.periodic ?? false)
     setEditing(false)
   }
 
@@ -99,6 +101,16 @@ function EditableRow({
         <td className="py-2 pr-4">
           <div className="flex items-center justify-end gap-1">
             <button
+              onClick={() => setEditPeriodic((p) => !p)}
+              title="Item periódico"
+              className={cn(
+                "rounded-md p-1 transition-colors",
+                editPeriodic ? "text-blue-500" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              <Repeat className="h-3.5 w-3.5" />
+            </button>
+            <button
               onClick={save}
               className="rounded-md p-1 text-accent hover:bg-accent/10"
               aria-label="Guardar"
@@ -123,7 +135,12 @@ function EditableRow({
       <td className="py-2.5 pl-4 pr-2">
         <ItemIcon icon={item.icon} categoryColor={categoryColor} size="sm" />
       </td>
-      <td className="py-2.5 pr-2 text-sm text-foreground">{item.name}</td>
+      <td className="py-2.5 pr-2 text-sm text-foreground">
+        <span className="flex items-center gap-1.5">
+          {item.name}
+          {item.periodic && <Repeat className="h-3 w-3 text-blue-500 shrink-0" />}
+        </span>
+      </td>
       <td className="py-2.5 pr-2 text-right">
         <span
           className={cn(

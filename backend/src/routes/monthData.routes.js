@@ -11,6 +11,42 @@ router.get('/month-data', async (req, res) => {
   }
 });
 
+router.post('/month-data', async (req, res) => {
+  try {
+    const { year, month, salary } = req.body;
+
+    if (!year || typeof year !== 'number') {
+      return res.status(400).json({ error: 'year is required and must be a number' });
+    }
+    if (!month || typeof month !== 'number' || month < 1 || month > 12) {
+      return res.status(400).json({ error: 'month is required and must be between 1 and 12' });
+    }
+    if (!salary || typeof salary !== 'number' || salary < 0) {
+      return res.status(400).json({ error: 'salary is required and must be a non-negative number' });
+    }
+
+    const newMonth = await monthDataService.createMonth(year, month, salary);
+    res.status(201).json(newMonth);
+  } catch (error) {
+    if (error.message && error.message.includes('already exists')) {
+      return res.status(409).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/month-data/:id', async (req, res) => {
+  try {
+    const deleted = await monthDataService.deleteMonth(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Month not found' });
+    }
+    res.json({ message: 'Month deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/month-data/:id', async (req, res) => {
   try {
     const data = await monthDataService.getById(req.params.id);
@@ -110,6 +146,52 @@ router.get('/month-data/:id/savings', async (req, res) => {
   }
 });
 
+router.post('/month-data/:monthId/savings', async (req, res) => {
+  try {
+    const { monthId } = req.params;
+    const { name, amount, date } = req.body;
+
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (amount === undefined || typeof amount !== 'number' || amount < 0) {
+      return res.status(400).json({ error: 'amount must be a non-negative number' });
+    }
+
+    const saving = await monthDataService.createSaving(monthId, { name, amount, date });
+    if (!saving) return res.status(404).json({ error: 'Month not found' });
+    res.status(201).json(saving);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/month-data/:monthId/savings/:savingId', async (req, res) => {
+  try {
+    const { monthId, savingId } = req.params;
+    const { name, amount, date } = req.body;
+
+    if (amount !== undefined && (typeof amount !== 'number' || amount < 0)) {
+      return res.status(400).json({ error: 'amount must be a non-negative number' });
+    }
+
+    const saving = await monthDataService.updateSaving(monthId, savingId, { name, amount, date });
+    if (!saving) return res.status(404).json({ error: 'Saving not found' });
+    res.json(saving);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/month-data/:monthId/savings/:savingId', async (req, res) => {
+  try {
+    const { monthId, savingId } = req.params;
+    const deleted = await monthDataService.deleteSaving(monthId, savingId);
+    if (!deleted) return res.status(404).json({ error: 'Saving not found' });
+    res.json({ message: 'Saving deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/month-data/:monthId/categories', async (req, res) => {
   try {
     const { monthId } = req.params;
@@ -159,13 +241,19 @@ router.delete('/month-data/:monthId/categories/:catId', async (req, res) => {
 router.put('/month-data/:monthId/categories/:categoryId/items/:itemId', async (req, res) => {
   try {
     const { monthId, categoryId, itemId } = req.params;
-    const { name, amount } = req.body;
-    
+    const { name, amount, icon, periodic } = req.body;
+
     if (amount !== undefined && (typeof amount !== 'number' || amount < 0)) {
       return res.status(400).json({ error: 'Amount must be a positive number' });
     }
 
-    const item = await monthDataService.updateItem(monthId, categoryId, itemId, { name, amount });
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (amount !== undefined) updates.amount = amount;
+    if (icon !== undefined) updates.icon = icon;
+    if (periodic !== undefined) updates.periodic = periodic;
+
+    const item = await monthDataService.updateItem(monthId, categoryId, itemId, updates);
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }

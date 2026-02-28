@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useFinance } from "@/lib/finance-context"
-import { getMonthLabel, MONTH_NAMES } from "@/lib/financial-data"
+import { getMonthLabel, MONTH_NAMES, formatCOP } from "@/lib/financial-data"
 import type { BudgetCategory, Subcategory } from "@/lib/financial-data"
 import { cn } from "@/lib/utils"
 import {
@@ -45,6 +45,7 @@ import {
   Pencil,
   Check,
   X,
+  Repeat,
 } from "lucide-react"
 
 // ── Color options ──────────────────────────────────────────────────────────────
@@ -404,6 +405,7 @@ export function SettingsPanel() {
     addSubcategory,
     updateSubcategory,
     deleteSubcategory,
+    updateItem,
   } = useFinance()
 
   const [open, setOpen] = useState(false)
@@ -471,6 +473,10 @@ export function SettingsPanel() {
           <TabsList className="mx-5 mt-4 shrink-0">
             <TabsTrigger value="months" className="flex-1">Meses</TabsTrigger>
             <TabsTrigger value="categories" className="flex-1">Categorías</TabsTrigger>
+            <TabsTrigger value="periodicos" className="flex-1 flex items-center gap-1.5">
+              <Repeat className="h-3.5 w-3.5" />
+              Periódicos
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Meses Tab ─────────────────────────────────────────────────── */}
@@ -576,6 +582,64 @@ export function SettingsPanel() {
                 </div>
               </div>
             ))}
+          </TabsContent>
+
+          {/* ── Periódicos Tab ─────────────────────────────────────────────── */}
+          <TabsContent value="periodicos" className="flex-1 overflow-y-auto px-3 py-4 mt-0">
+            {(() => {
+              const periodicCats = activeMonth.categories
+                .map((cat) => ({ ...cat, items: cat.items.filter((i) => i.periodic) }))
+                .filter((cat) => cat.items.length > 0)
+
+              if (periodicCats.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                    <Repeat className="h-8 w-8 text-muted-foreground/40" />
+                    <p className="text-sm text-muted-foreground">Sin items periódicos</p>
+                    <p className="text-xs text-muted-foreground/70">
+                      Edita un item y activa el botón <Repeat className="inline h-3 w-3" /> para marcarlo como periódico.
+                    </p>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="flex flex-col gap-4">
+                  {periodicCats.map((cat) => (
+                    <div key={cat.id} className="rounded-lg bg-card ring-1 ring-border overflow-hidden">
+                      <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
+                        <span className={cn("h-2 w-2 rounded-full", COLOR_DOT[cat.color])} />
+                        <span className="text-sm font-semibold text-foreground">{cat.name}</span>
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {cat.items.length} item{cat.items.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="flex flex-col divide-y divide-border/40">
+                        {cat.items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 px-3 py-2">
+                            <Repeat className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                            <span className="flex-1 text-sm text-foreground">{item.name}</span>
+                            <span className="text-sm font-mono font-medium text-foreground">
+                              {formatCOP(item.amount)}
+                            </span>
+                            <button
+                              onClick={() =>
+                                updateItem(cat.id, { ...item, periodic: false })
+                              }
+                              className="rounded p-1 text-muted-foreground hover:text-destructive"
+                              aria-label={`Desmarcar ${item.name} como periódico`}
+                              title="Desmarcar como periódico"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
           </TabsContent>
 
           {/* ── Categorías Tab ─────────────────────────────────────────────── */}

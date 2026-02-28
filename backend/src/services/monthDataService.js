@@ -84,6 +84,26 @@ class MonthDataService {
   async createItem(monthId, categoryId, item) {
     return mockDataService.createItem(monthId, categoryId, item);
   }
+
+  async createSaving(monthId, saving) {
+    return mockDataService.createSaving(monthId, saving);
+  }
+
+  async updateSaving(monthId, savingId, updates) {
+    return mockDataService.updateSaving(monthId, savingId, updates);
+  }
+
+  async deleteSaving(monthId, savingId) {
+    return mockDataService.deleteSaving(monthId, savingId);
+  }
+
+  async createMonth(year, month, salary) {
+    return mockDataService.createMonth(year, month, salary);
+  }
+
+  async deleteMonth(id) {
+    return mockDataService.deleteMonth(id);
+  }
 }
 
 module.exports = new MonthDataService();

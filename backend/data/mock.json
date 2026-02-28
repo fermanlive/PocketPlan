@@ -1,191 +1,311 @@
-{
-  "id": "2025-11",
-  "year": 2025,
-  "month": 11,
-  "salary": 7200000,
-  "weeklyBudgets": [
-    {
-      "label": "Semana 1",
-      "amount": 150000
-    },
-    {
-      "label": "Semana 2",
-      "amount": 150000
-    }
-  ],
-  "savings": [],
-  "categories": [
-    {
-      "id": "vivienda",
-      "name": "Vivienda",
-      "percentage": 25,
-      "budget": 1800000,
-      "color": "chart-1",
-      "items": [
-        {
-          "id": "vivienda-1",
-          "name": "Arriendo",
-          "amount": 600000,
-          "icon": "Home"
-        },
-        {
-          "id": "vivienda-2",
-          "name": "Servicios",
-          "amount": 300000,
-          "icon": "Zap"
-        },
-        {
-          "id": "vivienda-1772233627828",
-          "name": "Recarga Celular",
-          "amount": 20000,
-          "icon": "Zap",
-          "subcategoriaId": null
-        }
-      ]
-    },
-    {
-      "id": "gastos-personales",
-      "name": "Gastos Personales",
-      "percentage": 30,
-      "budget": 2160000,
-      "color": "chart-2",
-      "items": [
-        {
-          "id": "gp-1",
-          "name": "Mercado",
-          "amount": 700000,
-          "icon": "ShoppingCart"
-        },
-        {
-          "id": "gp-2",
-          "name": "Las Panas (Mascotas)",
-          "amount": 300000,
-          "icon": "PawPrint"
-        },
-        {
-          "id": "gp-4",
-          "name": "Lucero (Empleada)",
-          "amount": 275000,
-          "icon": "User"
-        },
-        {
-          "id": "gp-5",
-          "name": "Comidas por fuera",
-          "amount": 350000,
-          "icon": "Utensils"
-        },
-        {
-          "id": "gp-6",
-          "name": "Semanal",
-          "amount": 600000,
-          "icon": "Calendar"
-        }
-      ]
-    },
-    {
-      "id": "ahorros-inv",
-      "name": "Ahorros e Inversiones",
-      "percentage": 30,
-      "budget": 2160000,
-      "color": "chart-3",
-      "items": [
-        {
-          "id": "ai-1",
-          "name": "Itau CC 92",
-          "amount": 700000,
-          "icon": "PiggyBank"
-        },
-        {
-          "id": "ai-2",
-          "name": "Bancolombia CC",
-          "amount": 300000,
-          "icon": "PiggyBank"
-        },
-        {
-          "id": "ai-3",
-          "name": "Prestamo Itau",
-          "amount": 0,
-          "icon": "CreditCard"
-        },
-        {
-          "id": "ai-4",
-          "name": "Itau CC 97",
-          "amount": 275000,
-          "icon": "PiggyBank"
-        }
-      ]
-    },
-    {
-      "id": "diversion",
-      "name": "Diversión",
-      "percentage": 10,
-      "budget": 720000,
-      "color": "chart-4",
-      "items": [
-        {
-          "id": "div-1",
-          "name": "Apoyo",
-          "amount": 200000,
-          "icon": "Heart"
-        },
-        {
-          "id": "div-2",
-          "name": "Gimnasio",
-          "amount": 100000,
-          "icon": "Dumbbell"
-        },
-        {
-          "id": "div-3",
-          "name": "Partner (Clases de tennis)",
-          "amount": 160000,
-          "icon": "Trophy"
-        },
-        {
-          "id": "div-4",
-          "name": "Gasolina (Carro)",
-          "amount": 100000,
-          "icon": "Fuel"
-        }
-      ]
-    },
-    {
-      "id": "imprevistos",
-      "name": "Imprevistos",
-      "percentage": 5,
-      "budget": 360000,
-      "color": "chart-5",
-      "items": [
-        {
-          "id": "imp-1",
-          "name": "Emergencia medica",
-          "amount": 100000,
-          "icon": "HeartPulse"
-        },
-        {
-          "id": "imp-2",
-          "name": "Reparaciones",
-          "amount": 30000,
-          "icon": "Wrench"
-        },
-        {
-          "id": "imp-3",
-          "name": "Transporte extra",
-          "amount": 160000,
-          "icon": "Bus"
-        },
-        {
-          "id": "imp-4",
-          "name": "Farmacia",
-          "amount": 140000,
-          "icon": "Pill"
-        },
-        {
-          "id": "imp-5",
-          "name": "Otros",
-          "amount": 30000,
-          "icon": "MoreHorizontal"
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "id": "2025-11",
+    "year": 2025,
+    "month": 11,
+    "salary": 7200000,
+    "weeklyBudgets": [
+      {
+        "label": "Semana 1",
+        "amount": 150000
+      },
+      {
+        "label": "Semana 2",
+        "amount": 150000
+      }
+    ],
+    "savings": [],
+    "categories": [
+      {
+        "id": "vivienda",
+        "name": "Vivienda",
+        "percentage": 25,
+        "budget": 1800000,
+        "color": "chart-1",
+        "items": [
+          {
+            "id": "vivienda-1",
+            "name": "Arriendo",
+            "amount": 600000,
+            "icon": "Home"
+          },
+          {
+            "id": "vivienda-2",
+            "name": "Servicios",
+            "amount": 300000,
+            "icon": "Zap"
+          },
+          {
+            "id": "vivienda-1772233627828",
+            "name": "Recarga Celular",
+            "amount": 20000,
+            "icon": "Zap",
+            "subcategoriaId": null
+          }
+        ]
+      },
+      {
+        "id": "gastos-personales",
+        "name": "Gastos Personales",
+        "percentage": 30,
+        "budget": 2160000,
+        "color": "chart-2",
+        "items": [
+          {
+            "id": "gp-1",
+            "name": "Mercado",
+            "amount": 700000,
+            "icon": "ShoppingCart"
+          },
+          {
+            "id": "gp-2",
+            "name": "Las Panas (Mascotas)",
+            "amount": 300000,
+            "icon": "PawPrint"
+          },
+          {
+            "id": "gp-4",
+            "name": "Lucero (Empleada)",
+            "amount": 275000,
+            "icon": "User"
+          },
+          {
+            "id": "gp-5",
+            "name": "Comidas por fuera",
+            "amount": 350000,
+            "icon": "Utensils"
+          },
+          {
+            "id": "gp-6",
+            "name": "Semanal",
+            "amount": 600000,
+            "icon": "Calendar"
+          }
+        ]
+      },
+      {
+        "id": "ahorros-inv",
+        "name": "Ahorros e Inversiones",
+        "percentage": 30,
+        "budget": 2160000,
+        "color": "chart-3",
+        "items": [
+          {
+            "id": "ai-1",
+            "name": "Itau CC 92",
+            "amount": 700000,
+            "icon": "PiggyBank"
+          },
+          {
+            "id": "ai-2",
+            "name": "Bancolombia CC",
+            "amount": 300000,
+            "icon": "PiggyBank"
+          },
+          {
+            "id": "ai-3",
+            "name": "Prestamo Itau",
+            "amount": 0,
+            "icon": "CreditCard"
+          },
+          {
+            "id": "ai-4",
+            "name": "Itau CC 97",
+            "amount": 275000,
+            "icon": "PiggyBank"
+          }
+        ]
+      },
+      {
+        "id": "diversion",
+        "name": "Diversión",
+        "percentage": 10,
+        "budget": 720000,
+        "color": "chart-4",
+        "items": [
+          {
+            "id": "div-1",
+            "name": "Apoyo",
+            "amount": 200000,
+            "icon": "Heart"
+          },
+          {
+            "id": "div-2",
+            "name": "Gimnasio",
+            "amount": 100000,
+            "icon": "Dumbbell"
+          },
+          {
+            "id": "div-3",
+            "name": "Partner (Clases de tennis)",
+            "amount": 160000,
+            "icon": "Trophy"
+          },
+          {
+            "id": "div-4",
+            "name": "Gasolina (Carro)",
+            "amount": 100000,
+            "icon": "Fuel"
+          }
+        ]
+      },
+      {
+        "id": "imprevistos",
+        "name": "Imprevistos",
+        "percentage": 5,
+        "budget": 360000,
+        "color": "chart-5",
+        "items": [
+          {
+            "id": "imp-1",
+            "name": "Emergencia medica",
+            "amount": 100000,
+            "icon": "HeartPulse"
+          },
+          {
+            "id": "imp-2",
+            "name": "Reparaciones",
+            "amount": 30000,
+            "icon": "Wrench"
+          },
+          {
+            "id": "imp-3",
+            "name": "Transporte extra",
+            "amount": 160000,
+            "icon": "Bus"
+          },
+          {
+            "id": "imp-4",
+            "name": "Farmacia",
+            "amount": 140000,
+            "icon": "Pill"
+          },
+          {
+            "id": "imp-5",
+            "name": "Otros",
+            "amount": 30000,
+            "icon": "MoreHorizontal"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2025-12",
+    "year": 2025,
+    "month": 12,
+    "salary": 7200000,
+    "weeklyBudgets": [
+      {
+        "label": "Semana 1",
+        "amount": 150000
+      },
+      {
+        "label": "Semana 2",
+        "amount": 150000
+      }
+    ],
+    "savings": [],
+    "categories": [
+      {
+        "id": "vivienda",
+        "name": "Vivienda",
+        "percentage": 25,
+        "budget": 1800000,
+        "color": "chart-1",
+        "items": []
+      },
+      {
+        "id": "gastos-personales",
+        "name": "Gastos Personales",
+        "percentage": 30,
+        "budget": 2160000,
+        "color": "chart-2",
+        "items": []
+      },
+      {
+        "id": "ahorros-inv",
+        "name": "Ahorros e Inversiones",
+        "percentage": 30,
+        "budget": 2160000,
+        "color": "chart-3",
+        "items": []
+      },
+      {
+        "id": "diversion",
+        "name": "Diversión",
+        "percentage": 10,
+        "budget": 720000,
+        "color": "chart-4",
+        "items": []
+      },
+      {
+        "id": "imprevistos",
+        "name": "Imprevistos",
+        "percentage": 5,
+        "budget": 360000,
+        "color": "chart-5",
+        "items": []
+      }
+    ]
+  },
+  {
+    "id": "2026-01",
+    "year": 2026,
+    "month": 1,
+    "salary": 7200000,
+    "weeklyBudgets": [
+      {
+        "label": "Semana 1",
+        "amount": 150000
+      },
+      {
+        "label": "Semana 2",
+        "amount": 150000
+      }
+    ],
+    "savings": [],
+    "categories": [
+      {
+        "id": "vivienda",
+        "name": "Vivienda",
+        "percentage": 25,
+        "budget": 1800000,
+        "color": "chart-1",
+        "items": []
+      },
+      {
+        "id": "gastos-personales",
+        "name": "Gastos Personales",
+        "percentage": 30,
+        "budget": 2160000,
+        "color": "chart-2",
+        "items": []
+      },
+      {
+        "id": "ahorros-inv",
+        "name": "Ahorros e Inversiones",
+        "percentage": 30,
+        "budget": 2160000,
+        "color": "chart-3",
+        "items": []
+      },
+      {
+        "id": "diversion",
+        "name": "Diversión",
+        "percentage": 10,
+        "budget": 720000,
+        "color": "chart-4",
+        "items": []
+      },
+      {
+        "id": "imprevistos",
+        "name": "Imprevistos",
+        "percentage": 5,
+        "budget": 360000,
+        "color": "chart-5",
+        "items": []
+      }
+    ]
+  }
+]
