@@ -1,109 +1,45 @@
 const mockDataService = require('./mockDataService');
 
-class MonthDataService {
-  async getAll() {
-    return mockDataService.getAll();
-  }
+let activeService = mockDataService;
 
-  async getById(id) {
-    return mockDataService.getById(id);
-  }
+const monthDataService = {
+  async init(mongoConnected) {
+    if (mongoConnected) {
+      const mongoDataService = require('./mongoDataService');
+      await mongoDataService.seedIfEmpty();
+      activeService = mongoDataService;
+      console.log('[Service] Usando MongoDB');
+    } else {
+      console.log('[Service] Usando Mock (fallback)');
+    }
+  },
 
-  async getByYearMonth(year, month) {
-    return mockDataService.getByYearMonth(year, month);
-  }
+  async getAll()                                          { return activeService.getAll(); },
+  async getById(id)                                       { return activeService.getById(id); },
+  async getByYearMonth(year, month)                       { return activeService.getByYearMonth(year, month); },
+  async getByYear(year)                                   { return activeService.getByYear(year); },
+  async getCategoriesByMonth(id)                          { return activeService.getCategoriesByMonth(id); },
+  async getCategoryById(monthId, categoryId)              { return activeService.getCategoryById(monthId, categoryId); },
+  async getExpensesByMonth(monthId)                       { return activeService.getExpensesByMonth(monthId); },
+  async getWeeklyBudgetsByMonth(id)                       { return activeService.getWeeklyBudgetsByMonth(id); },
+  async getSavingsByMonth(id)                             { return activeService.getSavingsByMonth(id); },
+  async getAllSubcategories()                              { return activeService.getAllSubcategories(); },
+  async getSubcategoriesByCategory(categoriaPadreId)      { return activeService.getSubcategoriesByCategory(categoriaPadreId); },
+  async getSubcategoryById(id)                            { return activeService.getSubcategoryById(id); },
+  async createSubcategory(subcategory)                    { return activeService.createSubcategory(subcategory); },
+  async updateSubcategory(id, updates)                    { return activeService.updateSubcategory(id, updates); },
+  async deleteSubcategory(id)                             { return activeService.deleteSubcategory(id); },
+  async createCategory(monthId, data)                     { return activeService.createCategory(monthId, data); },
+  async updateCategory(monthId, categoryId, data)         { return activeService.updateCategory(monthId, categoryId, data); },
+  async deleteCategory(monthId, categoryId)               { return activeService.deleteCategory(monthId, categoryId); },
+  async updateItem(monthId, categoryId, itemId, updates)  { return activeService.updateItem(monthId, categoryId, itemId, updates); },
+  async deleteItem(monthId, categoryId, itemId)           { return activeService.deleteItem(monthId, categoryId, itemId); },
+  async createItem(monthId, categoryId, item)             { return activeService.createItem(monthId, categoryId, item); },
+  async createSaving(monthId, saving)                     { return activeService.createSaving(monthId, saving); },
+  async updateSaving(monthId, savingId, updates)          { return activeService.updateSaving(monthId, savingId, updates); },
+  async deleteSaving(monthId, savingId)                   { return activeService.deleteSaving(monthId, savingId); },
+  async createMonth(year, month, salary)                  { return activeService.createMonth(year, month, salary); },
+  async deleteMonth(id)                                   { return activeService.deleteMonth(id); },
+};
 
-  async getByYear(year) {
-    return mockDataService.getByYear(year);
-  }
-
-  async getCategoriesByMonth(id) {
-    return mockDataService.getCategoriesByMonth(id);
-  }
-
-  async getCategoryById(monthId, categoryId) {
-    return mockDataService.getCategoryById(monthId, categoryId);
-  }
-
-  async getExpensesByMonth(monthId) {
-    return mockDataService.getExpensesByMonth(monthId);
-  }
-
-  async getWeeklyBudgetsByMonth(id) {
-    return mockDataService.getWeeklyBudgetsByMonth(id);
-  }
-
-  async getSavingsByMonth(id) {
-    return mockDataService.getSavingsByMonth(id);
-  }
-
-  async getAllSubcategories() {
-    return mockDataService.getAllSubcategories();
-  }
-
-  async getSubcategoriesByCategory(categoriaPadreId) {
-    return mockDataService.getSubcategoriesByCategory(categoriaPadreId);
-  }
-
-  async getSubcategoryById(id) {
-    return mockDataService.getSubcategoryById(id);
-  }
-
-  async createSubcategory(subcategory) {
-    return mockDataService.createSubcategory(subcategory);
-  }
-
-  async updateSubcategory(id, updates) {
-    return mockDataService.updateSubcategory(id, updates);
-  }
-
-  async deleteSubcategory(id) {
-    return mockDataService.deleteSubcategory(id);
-  }
-
-  async createCategory(monthId, data) {
-    return mockDataService.createCategory(monthId, data);
-  }
-
-  async updateCategory(monthId, categoryId, data) {
-    return mockDataService.updateCategory(monthId, categoryId, data);
-  }
-
-  async deleteCategory(monthId, categoryId) {
-    return mockDataService.deleteCategory(monthId, categoryId);
-  }
-
-  async updateItem(monthId, categoryId, itemId, updates) {
-    return mockDataService.updateItem(monthId, categoryId, itemId, updates);
-  }
-
-  async deleteItem(monthId, categoryId, itemId) {
-    return mockDataService.deleteItem(monthId, categoryId, itemId);
-  }
-
-  async createItem(monthId, categoryId, item) {
-    return mockDataService.createItem(monthId, categoryId, item);
-  }
-
-  async createSaving(monthId, saving) {
-    return mockDataService.createSaving(monthId, saving);
-  }
-
-  async updateSaving(monthId, savingId, updates) {
-    return mockDataService.updateSaving(monthId, savingId, updates);
-  }
-
-  async deleteSaving(monthId, savingId) {
-    return mockDataService.deleteSaving(monthId, savingId);
-  }
-
-  async createMonth(year, month, salary) {
-    return mockDataService.createMonth(year, month, salary);
-  }
-
-  async deleteMonth(id) {
-    return mockDataService.deleteMonth(id);
-  }
-}
-
-module.exports = new MonthDataService();
+module.exports = monthDataService;

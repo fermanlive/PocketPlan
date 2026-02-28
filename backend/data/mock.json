@@ -264,7 +264,14 @@
         "amount": 150000
       }
     ],
-    "savings": [],
+    "savings": [
+      {
+        "id": "saving-1772299061767",
+        "name": "Ahorro",
+        "amount": 3000000,
+        "date": "2026-02-28"
+      }
+    ],
     "categories": [
       {
         "id": "vivienda",

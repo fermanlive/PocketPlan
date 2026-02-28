@@ -16,6 +16,14 @@ const expenseItemSchema = new mongoose.Schema({
   icon: {
     type: String,
     default: null
+  },
+  periodic: {
+    type: Boolean,
+    default: false
+  },
+  subcategoriaId: {
+    type: String,
+    default: null
   }
 }, { _id: false });
 
