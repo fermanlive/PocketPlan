@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { ClientProviders } from '@/components/client-providers'
 import './globals.css'
 
 const _plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
@@ -43,7 +44,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="font-sans antialiased">
-        {children}
+        <ClientProviders>
+          {children}
+        </ClientProviders>
         <Analytics />
       </body>
     </html>

@@ -281,6 +281,45 @@ class MockDataService {
     return true;
   }
 
+  createDebt(monthId, debt, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+    if (!monthData.debts) monthData.debts = [];
+    const newDebt = {
+      id: `debt-${Date.now()}`,
+      name: debt.name || 'Deuda',
+      principal: debt.principal || 0,
+      monthlyPayment: debt.monthlyPayment || 0,
+      installments: debt.installments || 1,
+      interestRate: debt.interestRate || 0,
+      startDate: debt.startDate || new Date().toISOString().split('T')[0],
+      timeline: debt.timeline || 'mediano',
+    };
+    monthData.debts.push(newDebt);
+    this.saveData();
+    return newDebt;
+  }
+
+  updateDebt(monthId, debtId, updates, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+    const idx = (monthData.debts || []).findIndex(d => d.id === debtId);
+    if (idx === -1) return null;
+    monthData.debts[idx] = { ...monthData.debts[idx], ...updates };
+    this.saveData();
+    return monthData.debts[idx];
+  }
+
+  deleteDebt(monthId, debtId, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return false;
+    const idx = (monthData.debts || []).findIndex(d => d.id === debtId);
+    if (idx === -1) return false;
+    monthData.debts.splice(idx, 1);
+    this.saveData();
+    return true;
+  }
+
   createItem(monthId, categoryId, item) {
     const monthData = this.getById(monthId);
     if (!monthData) return null;

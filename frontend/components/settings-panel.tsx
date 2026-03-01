@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useFinance } from "@/lib/finance-context"
-import { getMonthLabel, MONTH_NAMES, formatCOP } from "@/lib/financial-data"
+import { formatCOP } from "@/lib/financial-data"
 import type { BudgetCategory, Subcategory } from "@/lib/financial-data"
 import { cn } from "@/lib/utils"
 import {
@@ -47,6 +47,7 @@ import {
   X,
   Repeat,
 } from "lucide-react"
+
 
 // ── Color options ──────────────────────────────────────────────────────────────
 const CATEGORY_COLORS = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"]
@@ -392,13 +393,8 @@ function CategoryAccordionItem({
 // ── Main component ─────────────────────────────────────────────────────────────
 export function SettingsPanel() {
   const {
-    months,
-    activeMonthId,
     activeMonth,
     subcategories,
-    setActiveMonthId,
-    addMonth,
-    deleteMonth,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -410,26 +406,11 @@ export function SettingsPanel() {
 
   const [open, setOpen] = useState(false)
 
-  // Month dialog state
-  const [monthDialogOpen, setMonthDialogOpen] = useState(false)
-  const [newYear, setNewYear] = useState(String(new Date().getFullYear()))
-  const [newMonth, setNewMonth] = useState(String(new Date().getMonth() + 1))
-  const [newSalary, setNewSalary] = useState("7200000")
-
   // Category dialog state
   const [catDialogOpen, setCatDialogOpen] = useState(false)
   const [newCatName, setNewCatName] = useState("")
   const [newCatPct, setNewCatPct] = useState("10")
   const [newCatColor, setNewCatColor] = useState("chart-1")
-
-  function handleAddMonth() {
-    const y = parseInt(newYear, 10)
-    const m = parseInt(newMonth, 10)
-    const s = parseInt(newSalary, 10)
-    if (isNaN(y) || isNaN(m) || isNaN(s) || m < 1 || m > 12) return
-    addMonth(y, m, s)
-    setMonthDialogOpen(false)
-  }
 
   function handleAddCategory() {
     const pct = parseFloat(newCatPct)
@@ -440,14 +421,6 @@ export function SettingsPanel() {
     setNewCatColor("chart-1")
     setCatDialogOpen(false)
   }
-
-  // Group months by year
-  const byYear = months.reduce<Record<number, typeof months>>((acc, m) => {
-    if (!acc[m.year]) acc[m.year] = []
-    acc[m.year].push(m)
-    return acc
-  }, {})
-  const sortedYears = Object.keys(byYear).map(Number).sort((a, b) => b - a)
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -469,120 +442,14 @@ export function SettingsPanel() {
           </SheetTitle>
         </SheetHeader>
 
-        <Tabs defaultValue="months" className="flex flex-1 flex-col overflow-hidden">
+        <Tabs defaultValue="categories" className="flex flex-1 flex-col overflow-hidden">
           <TabsList className="mx-5 mt-4 shrink-0">
-            <TabsTrigger value="months" className="flex-1">Meses</TabsTrigger>
             <TabsTrigger value="categories" className="flex-1">Categorías</TabsTrigger>
             <TabsTrigger value="periodicos" className="flex-1 flex items-center gap-1.5">
               <Repeat className="h-3.5 w-3.5" />
               Periódicos
             </TabsTrigger>
           </TabsList>
-
-          {/* ── Meses Tab ─────────────────────────────────────────────────── */}
-          <TabsContent value="months" className="flex-1 overflow-y-auto px-3 py-4 mt-0">
-            {/* Add new month */}
-            <Dialog open={monthDialogOpen} onOpenChange={setMonthDialogOpen}>
-              <DialogTrigger asChild>
-                <button className="mb-4 flex w-full items-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
-                  <Plus className="h-4 w-4" />
-                  Nuevo mes
-                </button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Agregar nuevo mes</DialogTitle>
-                </DialogHeader>
-                <div className="flex flex-col gap-4 py-2">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Mes</label>
-                    <Select value={newMonth} onValueChange={setNewMonth}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MONTH_NAMES.map((name, i) => (
-                          <SelectItem key={i} value={String(i + 1)}>
-                            {name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Año</label>
-                    <Input
-                      type="number"
-                      value={newYear}
-                      onChange={(e) => setNewYear(e.target.value)}
-                      min={2020}
-                      max={2100}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Sueldo</label>
-                    <Input
-                      type="number"
-                      value={newSalary}
-                      onChange={(e) => setNewSalary(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setMonthDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddMonth}>Crear mes</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Month list */}
-            {sortedYears.map((year) => (
-              <div key={year} className="mb-4">
-                <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {year}
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {byYear[year]
-                    .sort((a, b) => b.month - a.month)
-                    .map((m) => {
-                      const isActive = m.id === activeMonthId
-                      return (
-                        <div
-                          key={m.id}
-                          className={cn(
-                            "group flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
-                            isActive
-                              ? "bg-secondary font-medium text-foreground"
-                              : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                          )}
-                        >
-                          <button
-                            onClick={() => {
-                              setActiveMonthId(m.id)
-                              setOpen(false)
-                            }}
-                            className="flex-1 text-left"
-                          >
-                            {getMonthLabel(m.year, m.month)}
-                          </button>
-                          {months.length > 1 && (
-                            <button
-                              onClick={() => deleteMonth(m.id)}
-                              className="ml-2 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-                              aria-label={`Eliminar ${getMonthLabel(m.year, m.month)}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      )
-                    })}
-                </div>
-              </div>
-            ))}
-          </TabsContent>
 
           {/* ── Periódicos Tab ─────────────────────────────────────────────── */}
           <TabsContent value="periodicos" className="flex-1 overflow-y-auto px-3 py-4 mt-0">

@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react"
-import type { MonthData, ExpenseItem, SavingsEntry, BudgetCategory, Subcategory } from "@/lib/financial-data"
+import type { MonthData, ExpenseItem, SavingsEntry, BudgetCategory, Subcategory, DebtEntry } from "@/lib/financial-data"
 import {
   initialMonths,
   createDefaultMonth,
@@ -16,6 +16,15 @@ import {
 } from "@/lib/financial-data"
 
 const API_URL = "http://localhost:4000/api"
+const TOKEN_KEY = "pocketplan_token"
+
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
 
 interface FinanceContextValue {
   months: MonthData[]
@@ -33,6 +42,9 @@ interface FinanceContextValue {
   addSavingsEntry: (entry: Omit<SavingsEntry, "id">) => Promise<void>
   removeSavingsEntry: (id: string) => Promise<void>
   updateSavingsEntry: (entry: SavingsEntry) => Promise<void>
+  addDebt: (debt: Omit<DebtEntry, "id">) => Promise<void>
+  removeDebt: (id: string) => Promise<void>
+  updateDebt: (debt: DebtEntry) => Promise<void>
   updateSalary: (salary: number) => void
   updateWeeklyBudget: (index: number, amount: number) => void
   refetchData: () => Promise<void>
@@ -63,7 +75,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${API_URL}/month-data`)
+      const response = await fetch(`${API_URL}/month-data`, {
+        headers: authHeaders(),
+      })
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -83,7 +97,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         try {
           const res = await fetch(`${API_URL}/month-data`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(),
             body: JSON.stringify({ year: currentYear, month: currentMonth, salary: recentSalary }),
           })
           if (res.ok) {
@@ -111,7 +125,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const fetchSubcategories = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/subcategories`)
+      const res = await fetch(`${API_URL}/subcategories`, { headers: authHeaders() })
       if (res.ok) {
         const data: Subcategory[] = await res.json()
         setSubcategories(data)
@@ -151,7 +165,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(`${API_URL}/month-data`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ year, month, salary }),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
@@ -187,7 +201,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       })
 
       try {
-        const res = await fetch(`${API_URL}/month-data/${id}`, { method: "DELETE" })
+        const res = await fetch(`${API_URL}/month-data/${id}`, { method: "DELETE", headers: authHeaders() })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
         if (removedMonth) {
@@ -224,7 +238,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           `${API_URL}/month-data/${activeMonthId}/categories/${categoryId}/items`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(),
             body: JSON.stringify({ name, amount, icon }),
           }
         )
@@ -275,7 +289,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const response = await fetch(
           `${API_URL}/month-data/${activeMonthId}/categories/${categoryId}/items/${itemId}`,
-          { method: "DELETE" }
+          { method: "DELETE", headers: authHeaders() }
         )
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -319,7 +333,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           `${API_URL}/month-data/${activeMonthId}/categories/${categoryId}/items/${item.id}`,
           {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(),
             body: JSON.stringify({ name: item.name, amount: item.amount, icon: item.icon, periodic: item.periodic }),
           }
         )
@@ -356,7 +370,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(`${API_URL}/month-data/${activeMonthId}/savings`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify(entry),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
@@ -388,7 +402,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(
           `${API_URL}/month-data/${activeMonthId}/savings/${id}`,
-          { method: "DELETE" }
+          { method: "DELETE", headers: authHeaders() }
         )
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
@@ -421,7 +435,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           `${API_URL}/month-data/${activeMonthId}/savings/${entry.id}`,
           {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(),
             body: JSON.stringify({ name: entry.name, amount: entry.amount, date: entry.date }),
           }
         )
@@ -435,6 +449,102 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         }
         setError(err instanceof Error ? err.message : "Failed to update saving")
         console.error("Error updating saving:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const addDebt = useCallback(
+    async (debt: Omit<DebtEntry, "id">) => {
+      const tempId = `debt-temp-${Date.now()}`
+      const tempDebt: DebtEntry = { ...debt, id: tempId }
+      updateActiveMonth((m) => ({
+        ...m,
+        debts: [...(m.debts ?? []), tempDebt],
+      }))
+
+      try {
+        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/debts`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(debt),
+        })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+        const serverDebt: DebtEntry = await res.json()
+        updateActiveMonth((m) => ({
+          ...m,
+          debts: (m.debts ?? []).map((d) => (d.id === tempId ? serverDebt : d)),
+        }))
+      } catch (err) {
+        updateActiveMonth((m) => ({
+          ...m,
+          debts: (m.debts ?? []).filter((d) => d.id !== tempId),
+        }))
+        setError(err instanceof Error ? err.message : "Failed to add debt")
+        console.error("Error adding debt:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const removeDebt = useCallback(
+    async (id: string) => {
+      let removedDebt: DebtEntry | null = null
+      updateActiveMonth((m) => {
+        removedDebt = (m.debts ?? []).find((d) => d.id === id) ?? null
+        return { ...m, debts: (m.debts ?? []).filter((d) => d.id !== id) }
+      })
+
+      try {
+        const res = await fetch(
+          `${API_URL}/month-data/${activeMonthId}/debts/${id}`,
+          { method: "DELETE", headers: authHeaders() }
+        )
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (removedDebt) {
+          updateActiveMonth((m) => ({
+            ...m,
+            debts: [...(m.debts ?? []), removedDebt!],
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to remove debt")
+        console.error("Error removing debt:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const updateDebt = useCallback(
+    async (debt: DebtEntry) => {
+      let previousDebt: DebtEntry | null = null
+      updateActiveMonth((m) => {
+        previousDebt = (m.debts ?? []).find((d) => d.id === debt.id) ?? null
+        return {
+          ...m,
+          debts: (m.debts ?? []).map((d) => (d.id === debt.id ? debt : d)),
+        }
+      })
+
+      try {
+        const res = await fetch(
+          `${API_URL}/month-data/${activeMonthId}/debts/${debt.id}`,
+          {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify(debt),
+          }
+        )
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (previousDebt) {
+          updateActiveMonth((m) => ({
+            ...m,
+            debts: (m.debts ?? []).map((d) => (d.id === debt.id ? previousDebt! : d)),
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to update debt")
+        console.error("Error updating debt:", err)
       }
     },
     [updateActiveMonth, activeMonthId]
@@ -481,7 +591,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(`${API_URL}/month-data/${activeMonthId}/categories`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ name, percentage, color }),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
@@ -518,7 +628,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           `${API_URL}/month-data/${activeMonthId}/categories/${category.id}`,
           {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders(),
             body: JSON.stringify({
               name: category.name,
               percentage: category.percentage,
@@ -557,7 +667,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(
           `${API_URL}/month-data/${activeMonthId}/categories/${categoryId}`,
-          { method: "DELETE" }
+          { method: "DELETE", headers: authHeaders() }
         )
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
@@ -580,7 +690,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(`${API_URL}/subcategories`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify(newSub),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
@@ -599,7 +709,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(`${API_URL}/subcategories/${sub.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify(sub),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
@@ -617,6 +727,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(`${API_URL}/subcategories/${id}`, {
           method: "DELETE",
+          headers: authHeaders(),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         setSubcategories((prev) => prev.filter((s) => s.id !== id))
@@ -646,6 +757,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         addSavingsEntry,
         removeSavingsEntry,
         updateSavingsEntry,
+        addDebt,
+        removeDebt,
+        updateDebt,
         updateSalary,
         updateWeeklyBudget,
         refetchData: fetchMonthData,

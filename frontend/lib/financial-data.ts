@@ -34,6 +34,26 @@ export interface SavingsEntry {
   date: string
 }
 
+export interface DebtEntry {
+  id: string
+  name: string
+  principal: number
+  monthlyPayment: number
+  installments: number
+  interestRate: number
+  startDate: string
+  timeline: "corto" | "mediano" | "largo"
+}
+
+export interface ProjectionMonth {
+  month: number
+  date: string
+  balance: number
+  payment: number
+  interest: number
+  principal: number
+}
+
 export interface MonthData {
   id: string
   year: number
@@ -42,6 +62,7 @@ export interface MonthData {
   categories: BudgetCategory[]
   weeklyBudgets: WeeklyBudget[]
   savings: SavingsEntry[]
+  debts: DebtEntry[]
 }
 
 export const MONTH_NAMES = [
@@ -117,6 +138,7 @@ export function createDefaultMonth(year: number, month: number, salary: number):
       { label: "Semana 2", amount: 150000 },
     ],
     savings: [],
+    debts: [],
   }
 }
 
@@ -205,6 +227,7 @@ export const initialMonths: MonthData[] = [
       { id: "s1", name: "Fondo emergencia", amount: 500000, date: "2025-11-01" },
       { id: "s2", name: "Vacaciones", amount: 300000, date: "2025-11-15" },
     ],
+    debts: [],
   },
 ]
 
@@ -229,4 +252,32 @@ export function getUsagePercentage(category: BudgetCategory): number {
   const total = getCategoryTotal(category)
   if (category.budget === 0) return 0
   return Math.min((total / category.budget) * 100, 100)
+}
+
+export function calculateProjection(debt: DebtEntry): ProjectionMonth[] {
+  const monthlyRate = debt.interestRate / 100 / 12
+  const months: ProjectionMonth[] = []
+  let balance = debt.principal
+  const startDate = new Date(debt.startDate)
+
+  for (let i = 0; i < debt.installments && balance > 0; i++) {
+    const interest = balance * monthlyRate
+    const principal = Math.min(debt.monthlyPayment - interest, balance)
+    balance -= principal
+    const monthDate = new Date(startDate)
+    monthDate.setMonth(monthDate.getMonth() + i)
+    months.push({
+      month: i + 1,
+      date: monthDate.toISOString().split("T")[0],
+      balance: Math.max(balance, 0),
+      payment: debt.monthlyPayment,
+      interest,
+      principal,
+    })
+  }
+  return months
+}
+
+export function getTotalInterest(debt: DebtEntry): number {
+  return calculateProjection(debt).reduce((sum, m) => sum + m.interest, 0)
 }

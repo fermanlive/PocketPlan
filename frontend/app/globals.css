@@ -145,3 +145,22 @@
     font-feature-settings: "tnum";
   }
 }
+
+/* === Gradientes y animaciones de inicio_page === */
+.gradient-primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.gradient-secondary { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); }
+.gradient-accent { background: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%); }
+.gradient-button { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); }
+.gradient-button:hover { background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%); }
+.gradient-text {
+  background: linear-gradient(135deg, #10b981, #059669);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.card-hover { @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1; }
+.fade-in { animation: fadeIn 0.5s ease-in-out; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

@@ -38,35 +38,35 @@ async function seedIfEmpty() {
 
 // ─── Month CRUD ────────────────────────────────────────────────────────────────
 
-async function getAll() {
-  return MonthData.find().lean();
+async function getAll(userId) {
+  return MonthData.find({ userId: userId || null }).lean();
 }
 
-async function getById(id) {
-  return MonthData.findOne({ id }).lean();
+async function getById(id, userId) {
+  return MonthData.findOne({ id, userId: userId || null }).lean();
 }
 
-async function getByYear(year) {
-  return MonthData.find({ year }).lean();
+async function getByYear(year, userId) {
+  return MonthData.find({ year, userId: userId || null }).lean();
 }
 
-async function getByYearMonth(year, month) {
-  return MonthData.findOne({ year, month }).lean();
+async function getByYearMonth(year, month, userId) {
+  return MonthData.findOne({ year, month, userId: userId || null }).lean();
 }
 
-async function getCategoriesByMonth(id) {
-  const doc = await getById(id);
+async function getCategoriesByMonth(id, userId) {
+  const doc = await getById(id, userId);
   return doc ? doc.categories : null;
 }
 
-async function getCategoryById(monthId, categoryId) {
-  const doc = await getById(monthId);
+async function getCategoryById(monthId, categoryId, userId) {
+  const doc = await getById(monthId, userId);
   if (!doc) return null;
   return doc.categories.find(c => c.id === categoryId) || null;
 }
 
-async function getExpensesByMonth(monthId) {
-  const doc = await getById(monthId);
+async function getExpensesByMonth(monthId, userId) {
+  const doc = await getById(monthId, userId);
   if (!doc) return null;
   const expenses = [];
   doc.categories.forEach(category => {
@@ -82,20 +82,21 @@ async function getExpensesByMonth(monthId) {
   return expenses;
 }
 
-async function getWeeklyBudgetsByMonth(id) {
-  const doc = await getById(id);
+async function getWeeklyBudgetsByMonth(id, userId) {
+  const doc = await getById(id, userId);
   return doc ? doc.weeklyBudgets : null;
 }
 
-async function getSavingsByMonth(id) {
-  const doc = await getById(id);
+async function getSavingsByMonth(id, userId) {
+  const doc = await getById(id, userId);
   return doc ? doc.savings : null;
 }
 
 // ─── Category CRUD ─────────────────────────────────────────────────────────────
 
-async function createCategory(monthId, { name, percentage, color }) {
-  const doc = await MonthData.findOne({ id: monthId }).lean();
+async function createCategory(monthId, { name, percentage, color }, userId) {
+  const filter = { id: monthId, userId: userId || null };
+  const doc = await MonthData.findOne(filter).lean();
   if (!doc) return null;
 
   const newCategory = {
@@ -108,7 +109,7 @@ async function createCategory(monthId, { name, percentage, color }) {
   };
 
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    filter,
     { $push: { categories: newCategory } },
     { new: true }
   ).lean();
@@ -116,8 +117,9 @@ async function createCategory(monthId, { name, percentage, color }) {
   return updated.categories.find(c => c.id === newCategory.id) || null;
 }
 
-async function updateCategory(monthId, categoryId, { name, percentage, color }) {
-  const doc = await MonthData.findOne({ id: monthId }).lean();
+async function updateCategory(monthId, categoryId, { name, percentage, color }, userId) {
+  const filter = { id: monthId, userId: userId || null };
+  const doc = await MonthData.findOne(filter).lean();
   if (!doc) return null;
 
   const category = doc.categories.find(c => c.id === categoryId);
@@ -132,7 +134,7 @@ async function updateCategory(monthId, categoryId, { name, percentage, color }) 
   }
 
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    filter,
     { $set: setFields },
     { arrayFilters: [{ 'cat.id': categoryId }], new: true }
   ).lean();
@@ -140,9 +142,9 @@ async function updateCategory(monthId, categoryId, { name, percentage, color }) 
   return updated.categories.find(c => c.id === categoryId) || null;
 }
 
-async function deleteCategory(monthId, categoryId) {
+async function deleteCategory(monthId, categoryId, userId) {
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    { id: monthId, userId: userId || null },
     { $pull: { categories: { id: categoryId } } },
     { new: true }
   ).lean();
@@ -151,7 +153,7 @@ async function deleteCategory(monthId, categoryId) {
 
 // ─── Item CRUD ─────────────────────────────────────────────────────────────────
 
-async function createItem(monthId, categoryId, item) {
+async function createItem(monthId, categoryId, item, userId) {
   if (item.amount !== undefined) {
     if (typeof item.amount !== 'number' || item.amount < 0) {
       throw new Error('Amount must be a positive number');
@@ -168,7 +170,7 @@ async function createItem(monthId, categoryId, item) {
   };
 
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId, 'categories.id': categoryId },
+    { id: monthId, userId: userId || null, 'categories.id': categoryId },
     { $push: { 'categories.$.items': newItem } },
     { new: true }
   ).lean();
@@ -178,7 +180,7 @@ async function createItem(monthId, categoryId, item) {
   return cat ? cat.items.find(i => i.id === newItem.id) || null : null;
 }
 
-async function updateItem(monthId, categoryId, itemId, updates) {
+async function updateItem(monthId, categoryId, itemId, updates, userId) {
   if (updates.amount !== undefined) {
     if (typeof updates.amount !== 'number' || updates.amount < 0) {
       throw new Error('Amount must be a positive number');
@@ -191,7 +193,7 @@ async function updateItem(monthId, categoryId, itemId, updates) {
   }
 
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    { id: monthId, userId: userId || null },
     { $set: setFields },
     {
       arrayFilters: [{ 'cat.id': categoryId }, { 'item.id': itemId }],
@@ -204,9 +206,9 @@ async function updateItem(monthId, categoryId, itemId, updates) {
   return cat ? cat.items.find(i => i.id === itemId) || null : null;
 }
 
-async function deleteItem(monthId, categoryId, itemId) {
+async function deleteItem(monthId, categoryId, itemId, userId) {
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    { id: monthId, userId: userId || null },
     { $pull: { 'categories.$[cat].items': { id: itemId } } },
     { arrayFilters: [{ 'cat.id': categoryId }] }
   ).lean();
@@ -215,7 +217,7 @@ async function deleteItem(monthId, categoryId, itemId) {
 
 // ─── Savings CRUD ──────────────────────────────────────────────────────────────
 
-async function createSaving(monthId, saving) {
+async function createSaving(monthId, saving, userId) {
   const newSaving = {
     id: `saving-${Date.now()}`,
     name: saving.name || 'Ahorro',
@@ -224,7 +226,7 @@ async function createSaving(monthId, saving) {
   };
 
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    { id: monthId, userId: userId || null },
     { $push: { savings: newSaving } },
     { new: true }
   ).lean();
@@ -233,14 +235,14 @@ async function createSaving(monthId, saving) {
   return updated.savings.find(s => s.id === newSaving.id) || null;
 }
 
-async function updateSaving(monthId, savingId, updates) {
+async function updateSaving(monthId, savingId, updates, userId) {
   const setFields = {};
   for (const [key, val] of Object.entries(updates)) {
     setFields[`savings.$[s].${key}`] = val;
   }
 
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    { id: monthId, userId: userId || null },
     { $set: setFields },
     { arrayFilters: [{ 's.id': savingId }], new: true }
   ).lean();
@@ -249,20 +251,64 @@ async function updateSaving(monthId, savingId, updates) {
   return updated.savings.find(s => s.id === savingId) || null;
 }
 
-async function deleteSaving(monthId, savingId) {
+async function deleteSaving(monthId, savingId, userId) {
   const updated = await MonthData.findOneAndUpdate(
-    { id: monthId },
+    { id: monthId, userId: userId || null },
     { $pull: { savings: { id: savingId } } }
+  ).lean();
+  return !!updated;
+}
+
+// ─── Debt CRUD ─────────────────────────────────────────────────────────────────
+
+async function createDebt(monthId, debt, userId) {
+  const newDebt = {
+    id: `debt-${Date.now()}`,
+    name: debt.name || 'Deuda',
+    principal: debt.principal || 0,
+    monthlyPayment: debt.monthlyPayment || 0,
+    installments: debt.installments || 1,
+    interestRate: debt.interestRate || 0,
+    startDate: debt.startDate || new Date().toISOString().split('T')[0],
+    timeline: debt.timeline || 'mediano',
+  };
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $push: { debts: newDebt } },
+    { new: true }
+  ).lean();
+  if (!updated) return null;
+  return updated.debts.find(d => d.id === newDebt.id) || null;
+}
+
+async function updateDebt(monthId, debtId, updates, userId) {
+  const setFields = {};
+  for (const [key, val] of Object.entries(updates)) {
+    setFields[`debts.$[d].${key}`] = val;
+  }
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $set: setFields },
+    { arrayFilters: [{ 'd.id': debtId }], new: true }
+  ).lean();
+  if (!updated) return null;
+  return updated.debts.find(d => d.id === debtId) || null;
+}
+
+async function deleteDebt(monthId, debtId, userId) {
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $pull: { debts: { id: debtId } } }
   ).lean();
   return !!updated;
 }
 
 // ─── Month lifecycle ───────────────────────────────────────────────────────────
 
-async function createMonth(year, month, salary) {
+async function createMonth(year, month, salary, userId) {
   const monthId = `${year}-${String(month).padStart(2, '0')}`;
 
-  const exists = await MonthData.findOne({ id: monthId }).lean();
+  const exists = await MonthData.findOne({ id: monthId, userId: userId || null }).lean();
   if (exists) throw new Error(`Month ${monthId} already exists`);
 
   const p = (pct) => Math.round((salary * pct) / 100);
@@ -277,6 +323,7 @@ async function createMonth(year, month, salary) {
   // Find most recent month before the new one and copy periodic items
   const newMonthNum = year * 100 + month;
   const prevMonth = await MonthData.findOne({
+    userId: userId || null,
     $expr: { $lt: [{ $add: [{ $multiply: ['$year', 100] }, '$month'] }, newMonthNum] },
   })
     .sort({ year: -1, month: -1 })
@@ -308,6 +355,7 @@ async function createMonth(year, month, salary) {
     year,
     month,
     salary,
+    userId: userId || null,
     weeklyBudgets: [
       { label: 'Semana 1', amount: 150000 },
       { label: 'Semana 2', amount: 150000 },
@@ -320,8 +368,8 @@ async function createMonth(year, month, salary) {
   return newMonth.toObject();
 }
 
-async function deleteMonth(id) {
-  const result = await MonthData.deleteOne({ id });
+async function deleteMonth(id, userId) {
+  const result = await MonthData.deleteOne({ id, userId: userId || null });
   return result.deletedCount > 0;
 }
 
@@ -378,6 +426,9 @@ module.exports = {
   createSaving,
   updateSaving,
   deleteSaving,
+  createDebt,
+  updateDebt,
+  deleteDebt,
   createMonth,
   deleteMonth,
   getAllSubcategories,

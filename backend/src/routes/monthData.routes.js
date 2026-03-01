@@ -4,7 +4,7 @@ const monthDataService = require('../services/monthDataService');
 
 router.get('/month-data', async (req, res) => {
   try {
-    const data = await monthDataService.getAll();
+    const data = await monthDataService.getAll(req.user.id);
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -25,7 +25,7 @@ router.post('/month-data', async (req, res) => {
       return res.status(400).json({ error: 'salary is required and must be a non-negative number' });
     }
 
-    const newMonth = await monthDataService.createMonth(year, month, salary);
+    const newMonth = await monthDataService.createMonth(year, month, salary, req.user.id);
     res.status(201).json(newMonth);
   } catch (error) {
     if (error.message && error.message.includes('already exists')) {
@@ -37,7 +37,7 @@ router.post('/month-data', async (req, res) => {
 
 router.delete('/month-data/:id', async (req, res) => {
   try {
-    const deleted = await monthDataService.deleteMonth(req.params.id);
+    const deleted = await monthDataService.deleteMonth(req.params.id, req.user.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Month not found' });
     }
@@ -49,7 +49,7 @@ router.delete('/month-data/:id', async (req, res) => {
 
 router.get('/month-data/:id', async (req, res) => {
   try {
-    const data = await monthDataService.getById(req.params.id);
+    const data = await monthDataService.getById(req.params.id, req.user.id);
     if (!data) {
       return res.status(404).json({ error: 'Month data not found' });
     }
@@ -61,7 +61,7 @@ router.get('/month-data/:id', async (req, res) => {
 
 router.get('/month-data/year/:year', async (req, res) => {
   try {
-    const data = await monthDataService.getByYear(parseInt(req.params.year));
+    const data = await monthDataService.getByYear(parseInt(req.params.year), req.user.id);
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -72,7 +72,8 @@ router.get('/month-data/year/:year/month/:month', async (req, res) => {
   try {
     const data = await monthDataService.getByYearMonth(
       parseInt(req.params.year),
-      parseInt(req.params.month)
+      parseInt(req.params.month),
+      req.user.id
     );
     if (!data) {
       return res.status(404).json({ error: 'Month data not found' });
@@ -85,7 +86,7 @@ router.get('/month-data/year/:year/month/:month', async (req, res) => {
 
 router.get('/month-data/:id/categories', async (req, res) => {
   try {
-    const categories = await monthDataService.getCategoriesByMonth(req.params.id);
+    const categories = await monthDataService.getCategoriesByMonth(req.params.id, req.user.id);
     if (!categories) {
       return res.status(404).json({ error: 'Month data not found' });
     }
@@ -99,7 +100,8 @@ router.get('/month-data/:id/categories/:categoryId', async (req, res) => {
   try {
     const category = await monthDataService.getCategoryById(
       req.params.id,
-      req.params.categoryId
+      req.params.categoryId,
+      req.user.id
     );
     if (!category) {
       return res.status(404).json({ error: 'Category not found' });
@@ -112,7 +114,7 @@ router.get('/month-data/:id/categories/:categoryId', async (req, res) => {
 
 router.get('/month-data/:id/expenses', async (req, res) => {
   try {
-    const expenses = await monthDataService.getExpensesByMonth(req.params.id);
+    const expenses = await monthDataService.getExpensesByMonth(req.params.id, req.user.id);
     if (!expenses) {
       return res.status(404).json({ error: 'Month data not found' });
     }
@@ -124,7 +126,7 @@ router.get('/month-data/:id/expenses', async (req, res) => {
 
 router.get('/month-data/:id/weekly-budgets', async (req, res) => {
   try {
-    const budgets = await monthDataService.getWeeklyBudgetsByMonth(req.params.id);
+    const budgets = await monthDataService.getWeeklyBudgetsByMonth(req.params.id, req.user.id);
     if (!budgets) {
       return res.status(404).json({ error: 'Month data not found' });
     }
@@ -136,7 +138,7 @@ router.get('/month-data/:id/weekly-budgets', async (req, res) => {
 
 router.get('/month-data/:id/savings', async (req, res) => {
   try {
-    const savings = await monthDataService.getSavingsByMonth(req.params.id);
+    const savings = await monthDataService.getSavingsByMonth(req.params.id, req.user.id);
     if (!savings) {
       return res.status(404).json({ error: 'Month data not found' });
     }
@@ -156,7 +158,7 @@ router.post('/month-data/:monthId/savings', async (req, res) => {
       return res.status(400).json({ error: 'amount must be a non-negative number' });
     }
 
-    const saving = await monthDataService.createSaving(monthId, { name, amount, date });
+    const saving = await monthDataService.createSaving(monthId, { name, amount, date }, req.user.id);
     if (!saving) return res.status(404).json({ error: 'Month not found' });
     res.status(201).json(saving);
   } catch (error) {
@@ -173,7 +175,7 @@ router.put('/month-data/:monthId/savings/:savingId', async (req, res) => {
       return res.status(400).json({ error: 'amount must be a non-negative number' });
     }
 
-    const saving = await monthDataService.updateSaving(monthId, savingId, { name, amount, date });
+    const saving = await monthDataService.updateSaving(monthId, savingId, { name, amount, date }, req.user.id);
     if (!saving) return res.status(404).json({ error: 'Saving not found' });
     res.json(saving);
   } catch (error) {
@@ -184,11 +186,45 @@ router.put('/month-data/:monthId/savings/:savingId', async (req, res) => {
 router.delete('/month-data/:monthId/savings/:savingId', async (req, res) => {
   try {
     const { monthId, savingId } = req.params;
-    const deleted = await monthDataService.deleteSaving(monthId, savingId);
+    const deleted = await monthDataService.deleteSaving(monthId, savingId, req.user.id);
     if (!deleted) return res.status(404).json({ error: 'Saving not found' });
     res.json({ message: 'Saving deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/month-data/:monthId/debts', async (req, res) => {
+  try {
+    const result = await monthDataService.createDebt(req.params.monthId, req.body, req.user.id);
+    if (!result) return res.status(404).json({ error: 'Month not found' });
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/month-data/:monthId/debts/:debtId', async (req, res) => {
+  try {
+    const result = await monthDataService.updateDebt(
+      req.params.monthId, req.params.debtId, req.body, req.user.id
+    );
+    if (!result) return res.status(404).json({ error: 'Debt not found' });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/month-data/:monthId/debts/:debtId', async (req, res) => {
+  try {
+    const ok = await monthDataService.deleteDebt(
+      req.params.monthId, req.params.debtId, req.user.id
+    );
+    if (!ok) return res.status(404).json({ error: 'Debt not found' });
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -202,7 +238,7 @@ router.post('/month-data/:monthId/categories', async (req, res) => {
       return res.status(400).json({ error: 'percentage must be between 0 and 100' });
     }
 
-    const category = await monthDataService.createCategory(monthId, { name, percentage, color });
+    const category = await monthDataService.createCategory(monthId, { name, percentage, color }, req.user.id);
     if (!category) return res.status(404).json({ error: 'Month not found' });
     res.status(201).json(category);
   } catch (error) {
@@ -219,7 +255,7 @@ router.put('/month-data/:monthId/categories/:catId', async (req, res) => {
       return res.status(400).json({ error: 'percentage must be between 0 and 100' });
     }
 
-    const category = await monthDataService.updateCategory(monthId, catId, { name, percentage, color });
+    const category = await monthDataService.updateCategory(monthId, catId, { name, percentage, color }, req.user.id);
     if (!category) return res.status(404).json({ error: 'Category not found' });
     res.json(category);
   } catch (error) {
@@ -230,7 +266,7 @@ router.put('/month-data/:monthId/categories/:catId', async (req, res) => {
 router.delete('/month-data/:monthId/categories/:catId', async (req, res) => {
   try {
     const { monthId, catId } = req.params;
-    const deleted = await monthDataService.deleteCategory(monthId, catId);
+    const deleted = await monthDataService.deleteCategory(monthId, catId, req.user.id);
     if (!deleted) return res.status(404).json({ error: 'Category not found' });
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
@@ -253,7 +289,7 @@ router.put('/month-data/:monthId/categories/:categoryId/items/:itemId', async (r
     if (icon !== undefined) updates.icon = icon;
     if (periodic !== undefined) updates.periodic = periodic;
 
-    const item = await monthDataService.updateItem(monthId, categoryId, itemId, updates);
+    const item = await monthDataService.updateItem(monthId, categoryId, itemId, updates, req.user.id);
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -266,8 +302,8 @@ router.put('/month-data/:monthId/categories/:categoryId/items/:itemId', async (r
 router.delete('/month-data/:monthId/categories/:categoryId/items/:itemId', async (req, res) => {
   try {
     const { monthId, categoryId, itemId } = req.params;
-    
-    const deleted = await monthDataService.deleteItem(monthId, categoryId, itemId);
+
+    const deleted = await monthDataService.deleteItem(monthId, categoryId, itemId, req.user.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -291,7 +327,7 @@ router.post('/month-data/:monthId/categories/:categoryId/items', async (req, res
       amount,
       icon,
       subcategoriaId
-    });
+    }, req.user.id);
     if (!item) {
       return res.status(404).json({ error: 'Month or category not found' });
     }
@@ -334,7 +370,7 @@ router.get('/subcategories/:id', async (req, res) => {
 router.post('/subcategories', async (req, res) => {
   try {
     const { id, name, icon, categoriaPadreId } = req.body;
-    
+
     if (!id || !name || !categoriaPadreId) {
       return res.status(400).json({ error: 'id, name, and categoriaPadreId are required' });
     }

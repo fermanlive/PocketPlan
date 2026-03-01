@@ -4,6 +4,8 @@ const cors = require('cors');
 const connectDB = require('./config/database');
 const monthDataService = require('./services/monthDataService');
 const monthDataRoutes = require('./routes/monthData.routes');
+const authRoutes = require('./routes/auth.routes');
+const authenticateToken = require('./middleware/authenticateToken');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -27,7 +29,17 @@ async function startServer() {
 
   await monthDataService.init(mongoConnected);
 
-  app.use('/api', monthDataRoutes);
+  if (mongoConnected) {
+    app.use('/api/auth', authRoutes);
+    app.use('/api', authenticateToken, monthDataRoutes);
+  } else {
+    app.use('/api/auth', (req, res) => {
+      res.status(503).json({ error: 'Auth requiere MongoDB. Verifica la conexión a la base de datos.' });
+    });
+    app.use('/api', (req, res) => {
+      res.status(503).json({ error: 'Base de datos no disponible. Verifica la conexión a MongoDB.' });
+    });
+  }
   app.get('/health', (req, res) => {
     res.json({
       status: 'OK',
