@@ -6,6 +6,7 @@ const monthDataService = {
   async init(mongoConnected) {
     if (mongoConnected) {
       const mongoDataService = require('./mongoDataService');
+      await mongoDataService.migrateIndexes();
       await mongoDataService.seedIfEmpty();
       activeService = mongoDataService;
       console.log('[Service] Usando MongoDB');

@@ -154,12 +154,25 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const addMonth = useCallback(
     async (year: number, month: number, salary: number) => {
       const optimisticMonth = createDefaultMonth(year, month, salary)
+      const prevActiveMonthId = activeMonthId
+
+      // Check if month already exists before making any state changes
+      let monthAlreadyExists = false
       setMonths((prev) => {
-        if (prev.some((m) => m.id === optimisticMonth.id)) return prev
+        if (prev.some((m) => m.id === optimisticMonth.id)) {
+          monthAlreadyExists = true
+          return prev
+        }
         return [...prev, optimisticMonth].sort(
           (a, b) => a.year * 100 + a.month - (b.year * 100 + b.month)
         )
       })
+
+      if (monthAlreadyExists) {
+        setActiveMonthId(optimisticMonth.id)
+        return
+      }
+
       setActiveMonthId(optimisticMonth.id)
 
       try {
@@ -177,11 +190,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         )
       } catch (err) {
         setMonths((prev) => prev.filter((m) => m.id !== optimisticMonth.id))
+        setActiveMonthId(prevActiveMonthId)
         setError(err instanceof Error ? err.message : "Failed to add month")
         console.error("Error adding month:", err)
       }
     },
-    []
+    [activeMonthId]
   )
 
   const deleteMonth = useCallback(

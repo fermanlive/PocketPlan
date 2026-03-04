@@ -8,7 +8,6 @@ const monthDataSchema = new mongoose.Schema({
   id: {
     type: String,
     required: true,
-    unique: true,
     match: /^\d{4}-\d{2}$/
   },
   year: {
@@ -38,5 +37,8 @@ const monthDataSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Índice compuesto: cada usuario tiene su propio conjunto de meses
+monthDataSchema.index({ id: 1, userId: 1 }, { unique: true });
 
 module.exports = mongoose.model('MonthData', monthDataSchema);

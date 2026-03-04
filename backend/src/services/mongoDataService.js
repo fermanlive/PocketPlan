@@ -5,6 +5,17 @@ const Subcategory = require('../models/Subcategory');
 
 // ─── Seed helpers ──────────────────────────────────────────────────────────────
 
+async function migrateIndexes() {
+  try {
+    await MonthData.collection.dropIndex('id_1');
+    console.log('[Migration] Índice id_1 eliminado — reemplazado por (id, userId)');
+  } catch (err) {
+    if (err.codeName !== 'IndexNotFound') {
+      console.warn('[Migration] No se pudo eliminar id_1:', err.message);
+    }
+  }
+}
+
 async function seedIfEmpty() {
   const monthCount = await MonthData.countDocuments();
   if (monthCount === 0) {
@@ -407,6 +418,7 @@ async function deleteSubcategory(id) {
 // ─── Exports ───────────────────────────────────────────────────────────────────
 
 module.exports = {
+  migrateIndexes,
   seedIfEmpty,
   getAll,
   getById,

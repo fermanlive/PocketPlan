@@ -31,6 +31,7 @@ router.post('/month-data', async (req, res) => {
     if (error.message && error.message.includes('already exists')) {
       return res.status(409).json({ error: error.message });
     }
+    console.error('[POST /month-data]', error);
     res.status(500).json({ error: error.message });
   }
 });
