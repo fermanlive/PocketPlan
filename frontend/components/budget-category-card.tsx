@@ -6,8 +6,9 @@ import {
   getCategoryTotal,
   getCategoryRemaining,
   getUsagePercentage,
+  getItemEffectiveAmount,
 } from "@/lib/financial-data"
-import type { BudgetCategory, ExpenseItem } from "@/lib/financial-data"
+import type { BudgetCategory, ExpenseItem, SubItem } from "@/lib/financial-data"
 import { ItemIcon } from "@/components/item-icon"
 import { useFinance } from "@/lib/finance-context"
 import { cn } from "@/lib/utils"
@@ -28,7 +29,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Trash2, Pencil, Check, X, TrendingDown, TrendingUp, Repeat } from "lucide-react"
+import {
+  Plus, Trash2, Pencil, Check, X, TrendingDown, TrendingUp, Repeat, ChevronDown, ChevronRight, Layers, CircleCheck,
+} from "lucide-react"
 
 interface BudgetCategoryCardProps {
   category: BudgetCategory
@@ -58,6 +61,195 @@ const colorMapBgLight: Record<string, string> = {
   "chart-5": "bg-chart-5/10",
 }
 
+function SubItemRow({
+  subitem,
+  categoryId,
+  itemId,
+}: {
+  subitem: SubItem
+  categoryId: string
+  itemId: string
+}) {
+  const { removeSubItem, updateSubItem } = useFinance()
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState(subitem.name)
+  const [editAmount, setEditAmount] = useState(String(subitem.amount))
+  const [editNote, setEditNote] = useState(subitem.note ?? "")
+
+  function save() {
+    const a = parseInt(editAmount, 10)
+    if (!editName.trim() || isNaN(a)) return
+    updateSubItem(categoryId, itemId, { ...subitem, name: editName.trim(), amount: a, note: editNote || undefined })
+    setEditing(false)
+  }
+
+  function cancel() {
+    setEditName(subitem.name)
+    setEditAmount(String(subitem.amount))
+    setEditNote(subitem.note ?? "")
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5 py-1">
+        <Input
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          className="h-6 flex-1 text-xs"
+          autoFocus
+          placeholder="Nombre"
+        />
+        <Input
+          value={editNote}
+          onChange={(e) => setEditNote(e.target.value)}
+          className="h-6 w-24 text-xs text-muted-foreground"
+          placeholder="Nota"
+        />
+        <Input
+          type="number"
+          value={editAmount}
+          onChange={(e) => setEditAmount(e.target.value)}
+          className="h-6 w-24 text-right text-xs font-mono"
+        />
+        <button onClick={save} className="shrink-0 rounded p-0.5 text-accent hover:bg-accent/10" aria-label="Guardar">
+          <Check className="h-3 w-3" />
+        </button>
+        <button onClick={cancel} className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted" aria-label="Cancelar">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="group/sub flex items-center gap-2 py-1">
+      <button
+        onClick={() => updateSubItem(categoryId, itemId, { ...subitem, paid: !subitem.paid })}
+        className={cn(
+          "shrink-0 transition-opacity",
+          subitem.paid ? "opacity-100 text-accent" : "opacity-0 group-hover/sub:opacity-100 text-muted-foreground hover:text-accent"
+        )}
+        aria-label={subitem.paid ? "Marcar como no pagado" : "Marcar como pagado"}
+      >
+        <CircleCheck className="h-3 w-3" />
+      </button>
+      <span className={cn("flex-1 text-xs text-foreground leading-tight", subitem.paid && "line-through text-muted-foreground")}>
+        {subitem.name}
+      </span>
+      {subitem.note && (
+        <span className="text-xs text-muted-foreground italic truncate max-w-[80px]">{subitem.note}</span>
+      )}
+      <span className="text-xs font-mono text-muted-foreground shrink-0">{formatCOP(subitem.amount)}</span>
+      <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/sub:opacity-100 shrink-0">
+        <button
+          onClick={() => setEditing(true)}
+          className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+          aria-label="Editar sub-item"
+        >
+          <Pencil className="h-2.5 w-2.5" />
+        </button>
+        <button
+          onClick={() => removeSubItem(categoryId, itemId, subitem.id)}
+          className="rounded p-0.5 text-muted-foreground hover:text-destructive"
+          aria-label="Eliminar sub-item"
+        >
+          <Trash2 className="h-2.5 w-2.5" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AddSubItemForm({ categoryId, itemId }: { categoryId: string; itemId: string }) {
+  const { addSubItem } = useFinance()
+  const [name, setName] = useState("")
+  const [amount, setAmount] = useState("")
+  const [note, setNote] = useState("")
+
+  function handleAdd() {
+    const a = parseInt(amount, 10)
+    if (!name.trim() || isNaN(a) || a < 0) return
+    addSubItem(categoryId, itemId, { name: name.trim(), amount: a, note: note || undefined })
+    setName("")
+    setAmount("")
+    setNote("")
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 pt-1 border-t border-border/30">
+      <Input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="h-6 flex-1 text-xs"
+        placeholder="Sub-item"
+        onKeyDown={(e) => { if (e.key === "Enter") handleAdd() }}
+      />
+      <Input
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="h-6 w-20 text-xs"
+        placeholder="Nota"
+      />
+      <Input
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        className="h-6 w-24 text-right text-xs font-mono"
+        placeholder="0"
+        onKeyDown={(e) => { if (e.key === "Enter") handleAdd() }}
+      />
+      <button
+        onClick={handleAdd}
+        className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+        aria-label="Agregar sub-item"
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+    </div>
+  )
+}
+
+function SubItemPanel({ item, categoryId }: { item: ExpenseItem; categoryId: string }) {
+  const subitems = item.subitems ?? []
+  const subTotal = subitems.reduce((s, sub) => s + sub.amount, 0)
+  const overBudget = subTotal > item.amount
+  const remaining = item.amount - subTotal
+  const progress = item.amount > 0 ? Math.min((subTotal / item.amount) * 100, 100) : 0
+
+  return (
+    <div className="ml-8 border-l-2 border-border/40 pl-3 pb-3">
+      {subitems.length > 0 && (
+        <div className="pt-1.5 pb-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Desglose
+            </span>
+            <span className="text-[10px] font-mono text-muted-foreground">
+              {formatCOP(subTotal)} de {formatCOP(item.amount)}
+            </span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn("h-full rounded-full transition-all duration-300",
+                overBudget ? "bg-destructive" : "bg-accent")}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className={cn("mt-1 text-[10px] font-mono text-right",
+            remaining >= 0 ? "text-accent" : "text-destructive")}>
+            Restante: {formatCOP(remaining)}
+          </p>
+        </div>
+      )}
+      {subitems.map((sub) => (
+        <SubItemRow key={sub.id} subitem={sub} categoryId={categoryId} itemId={item.id} />
+      ))}
+      <AddSubItemForm categoryId={categoryId} itemId={item.id} />
+    </div>
+  )
+}
+
 function InlineEditRow({
   item,
   categoryId,
@@ -72,6 +264,10 @@ function InlineEditRow({
   const [editName, setEditName] = useState(item.name)
   const [editAmount, setEditAmount] = useState(String(item.amount))
   const [editPeriodic, setEditPeriodic] = useState(item.periodic ?? false)
+  const [expanded, setExpanded] = useState(false)
+
+  const hasSubitems = (item.subitems?.length ?? 0) > 0
+  const effectiveAmount = getItemEffectiveAmount(item)
 
   function save() {
     const a = parseInt(editAmount, 10)
@@ -87,83 +283,126 @@ function InlineEditRow({
     setEditing(false)
   }
 
-  if (editing) {
-    return (
-      <div className="flex items-center gap-2 border-b border-border/40 py-2 last:border-0">
-        <ItemIcon icon={item.icon} categoryColor={categoryColor} size="sm" />
-        <Input
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          className="h-7 flex-1 text-sm"
-          autoFocus
-        />
-        <Input
-          type="number"
-          value={editAmount}
-          onChange={(e) => setEditAmount(e.target.value)}
-          className="h-7 w-28 text-right text-sm font-mono"
-        />
-        <button
-          onClick={() => setEditPeriodic((p) => !p)}
-          title="Item periódico"
-          className={cn(
-            "shrink-0 rounded p-1 transition-colors",
-            editPeriodic ? "text-blue-500" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Repeat className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={save}
-          className="shrink-0 rounded p-1 text-accent hover:bg-accent/10"
-          aria-label="Guardar"
-        >
-          <Check className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={cancel}
-          className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted"
-          aria-label="Cancelar"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="group/row flex items-center gap-2.5 border-b border-border/40 py-2.5 last:border-0">
-      <ItemIcon icon={item.icon} categoryColor={categoryColor} size="sm" />
-      <span className="flex-1 text-sm text-foreground leading-tight">{item.name}</span>
-      <div className="flex items-center gap-1.5">
-        {item.periodic && (
-          <Repeat className="h-3 w-3 text-blue-500 shrink-0" />
-        )}
-        <span
-          className={cn(
-            "text-sm font-mono font-semibold",
-            item.amount === 0 ? "text-muted-foreground" : "text-foreground"
-          )}
-        >
-          {formatCOP(item.amount)}
-        </span>
-        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
+    <div className="border-b border-border/40 last:border-0">
+      {editing ? (
+        <div className="flex items-center gap-2 py-2">
+          <ItemIcon icon={item.icon} categoryColor={categoryColor} size="sm" />
+          <Input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="h-7 flex-1 text-sm"
+            autoFocus
+          />
+          <div className="relative">
+            <Input
+              type="number"
+              value={editAmount}
+              onChange={(e) => setEditAmount(e.target.value)}
+              className={cn("h-7 w-28 text-right text-sm font-mono", hasSubitems && "opacity-50 cursor-not-allowed")}
+              disabled={hasSubitems}
+              title={hasSubitems ? "Calculado desde sub-items" : undefined}
+            />
+            {hasSubitems && (
+              <Layers className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+            )}
+          </div>
           <button
-            onClick={() => setEditing(true)}
-            className="rounded p-0.5 text-muted-foreground hover:text-foreground"
-            aria-label={`Editar ${item.name}`}
+            onClick={() => setEditPeriodic((p) => !p)}
+            title="Item periódico"
+            className={cn(
+              "shrink-0 rounded p-1 transition-colors",
+              editPeriodic ? "text-blue-500" : "text-muted-foreground hover:text-foreground"
+            )}
           >
-            <Pencil className="h-3 w-3" />
+            <Repeat className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={() => removeItem(categoryId, item.id)}
-            className="rounded p-0.5 text-muted-foreground hover:text-destructive"
-            aria-label={`Eliminar ${item.name}`}
+            onClick={() => setExpanded((v) => !v)}
+            title="Desglosar en sub-items"
+            className={cn(
+              "shrink-0 rounded p-1 transition-colors",
+              (hasSubitems || expanded) ? "text-blue-500" : "text-muted-foreground hover:text-foreground"
+            )}
           >
-            <Trash2 className="h-3 w-3" />
+            <Layers className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={save}
+            className="shrink-0 rounded p-1 text-accent hover:bg-accent/10"
+            aria-label="Guardar"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={cancel}
+            className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted"
+            aria-label="Cancelar"
+          >
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="group/row flex items-center gap-2.5 py-2.5">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={expanded ? "Contraer" : "Expandir"}
+          >
+            {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </button>
+          <ItemIcon icon={item.icon} categoryColor={categoryColor} size="sm" />
+          <span className={cn("flex-1 text-sm text-foreground leading-tight", item.paid && !hasSubitems && "line-through text-muted-foreground")}>
+            {item.name}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {item.periodic && (
+              <Repeat className="h-3 w-3 text-blue-500 shrink-0" />
+            )}
+            {hasSubitems && (
+              <Layers className="h-3 w-3 text-muted-foreground shrink-0" aria-label="Tiene sub-items" />
+            )}
+            <span
+              className={cn(
+                "text-sm font-mono font-semibold",
+                effectiveAmount === 0 ? "text-muted-foreground" : "text-foreground"
+              )}
+            >
+              {formatCOP(effectiveAmount)}
+            </span>
+            {!hasSubitems && (
+              <button
+                onClick={() => updateItem(categoryId, { ...item, paid: !item.paid })}
+                className={cn(
+                  "shrink-0 transition-opacity",
+                  item.paid ? "opacity-100 text-accent" : "opacity-0 group-hover/row:opacity-100 text-muted-foreground hover:text-accent"
+                )}
+                aria-label={item.paid ? "Marcar como no pagado" : "Marcar como pagado"}
+              >
+                <CircleCheck className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
+              <button
+                onClick={() => setEditing(true)}
+                className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                aria-label={`Editar ${item.name}`}
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+              <button
+                onClick={() => removeItem(categoryId, item.id)}
+                className="rounded p-0.5 text-muted-foreground hover:text-destructive"
+                aria-label={`Eliminar ${item.name}`}
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {expanded && <SubItemPanel item={item} categoryId={categoryId} />}
     </div>
   )
 }

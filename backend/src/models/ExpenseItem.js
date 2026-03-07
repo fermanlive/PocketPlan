@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const SubItemSchema = require('./SubItem');
 
 const expenseItemSchema = new mongoose.Schema({
   id: {
@@ -24,7 +25,9 @@ const expenseItemSchema = new mongoose.Schema({
   subcategoriaId: {
     type: String,
     default: null
-  }
+  },
+  subitems: { type: [SubItemSchema], default: [] },
+  paid: { type: Boolean, default: false },
 }, { _id: false });
 
 module.exports = mongoose.model('ExpenseItem', expenseItemSchema);

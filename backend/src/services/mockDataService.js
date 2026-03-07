@@ -346,6 +346,125 @@ class MockDataService {
     return newItem;
   }
 
+  updateSalary(monthId, salary, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    monthData.salary = salary;
+    monthData.categories.forEach(cat => {
+      cat.budget = Math.round((salary * cat.percentage) / 100);
+    });
+    this.saveData();
+    return monthData;
+  }
+
+  createExtraIncome(monthId, income, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    if (!Array.isArray(monthData.extraIncomes)) monthData.extraIncomes = [];
+
+    const newIncome = {
+      id: `income-${Date.now()}`,
+      name: income.name || 'Ingreso',
+      amount: income.amount || 0,
+      date: income.date || new Date().toISOString().split('T')[0],
+    };
+
+    monthData.extraIncomes.push(newIncome);
+    this.saveData();
+    return newIncome;
+  }
+
+  updateExtraIncome(monthId, incomeId, updates, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    const idx = (monthData.extraIncomes ?? []).findIndex(e => e.id === incomeId);
+    if (idx === -1) return null;
+
+    monthData.extraIncomes[idx] = { ...monthData.extraIncomes[idx], ...updates };
+    this.saveData();
+    return monthData.extraIncomes[idx];
+  }
+
+  deleteExtraIncome(monthId, incomeId, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return false;
+
+    const idx = (monthData.extraIncomes ?? []).findIndex(e => e.id === incomeId);
+    if (idx === -1) return false;
+
+    monthData.extraIncomes.splice(idx, 1);
+    this.saveData();
+    return true;
+  }
+
+  createSubItem(monthId, categoryId, itemId, subitem, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    const category = monthData.categories.find(c => c.id === categoryId);
+    if (!category) return null;
+
+    const item = category.items.find(i => i.id === itemId);
+    if (!item) return null;
+
+    if (!Array.isArray(item.subitems)) item.subitems = [];
+
+    const newSub = {
+      id: `sub-${Date.now()}`,
+      name: subitem.name || 'Sub-item',
+      amount: subitem.amount || 0,
+      note: subitem.note || null,
+    };
+
+    item.subitems.push(newSub);
+    item.amount = item.subitems.reduce((s, sub) => s + sub.amount, 0);
+    this.saveData();
+    return newSub;
+  }
+
+  updateSubItem(monthId, categoryId, itemId, subitemId, updates, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+
+    const category = monthData.categories.find(c => c.id === categoryId);
+    if (!category) return null;
+
+    const item = category.items.find(i => i.id === itemId);
+    if (!item) return null;
+
+    const idx = (item.subitems ?? []).findIndex(s => s.id === subitemId);
+    if (idx === -1) return null;
+
+    item.subitems[idx] = { ...item.subitems[idx], ...updates };
+    item.amount = item.subitems.reduce((s, sub) => s + sub.amount, 0);
+    this.saveData();
+    return item.subitems[idx];
+  }
+
+  deleteSubItem(monthId, categoryId, itemId, subitemId, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return false;
+
+    const category = monthData.categories.find(c => c.id === categoryId);
+    if (!category) return false;
+
+    const item = category.items.find(i => i.id === itemId);
+    if (!item) return false;
+
+    const idx = (item.subitems ?? []).findIndex(s => s.id === subitemId);
+    if (idx === -1) return false;
+
+    item.subitems.splice(idx, 1);
+    if (item.subitems.length > 0) {
+      item.amount = item.subitems.reduce((s, sub) => s + sub.amount, 0);
+    }
+    this.saveData();
+    return true;
+  }
+
   createMonth(year, month, salary) {
     const monthId = `${year}-${String(month).padStart(2, '0')}`;
 

@@ -44,6 +44,13 @@ const monthDataService = {
   async deleteDebt(monthId, debtId, userId)                     { return activeService.deleteDebt(monthId, debtId, userId); },
   async createMonth(year, month, salary, userId)                { return activeService.createMonth(year, month, salary, userId); },
   async deleteMonth(id, userId)                                 { return activeService.deleteMonth(id, userId); },
+  async updateSalary(monthId, salary, userId)                   { return activeService.updateSalary(monthId, salary, userId); },
+  async createExtraIncome(monthId, income, userId)              { return activeService.createExtraIncome(monthId, income, userId); },
+  async updateExtraIncome(monthId, incomeId, upd, userId)       { return activeService.updateExtraIncome(monthId, incomeId, upd, userId); },
+  async deleteExtraIncome(monthId, incomeId, userId)            { return activeService.deleteExtraIncome(monthId, incomeId, userId); },
+  async createSubItem(monthId, catId, itemId, sub, userId)      { return activeService.createSubItem(monthId, catId, itemId, sub, userId); },
+  async updateSubItem(monthId, catId, itemId, subId, upd, uid)  { return activeService.updateSubItem(monthId, catId, itemId, subId, upd, uid); },
+  async deleteSubItem(monthId, catId, itemId, subId, userId)    { return activeService.deleteSubItem(monthId, catId, itemId, subId, userId); },
 };
 
 module.exports = monthDataService;

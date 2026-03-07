@@ -5,6 +5,8 @@ import {
   formatCOP,
   getCategoryTotal,
   getCategoryRemaining,
+  getTotalIncome,
+  getMoneyToDate,
 } from "@/lib/financial-data"
 import { cn } from "@/lib/utils"
 
@@ -15,7 +17,9 @@ export function SummaryOverview() {
     (sum, cat) => sum + getCategoryTotal(cat),
     0
   )
-  const totalRemaining = activeMonth.salary - totalSpent
+  const totalIncome = getTotalIncome(activeMonth)
+  const moneyToDate = getMoneyToDate(activeMonth)
+  const totalRemaining = totalIncome - totalSpent
 
   return (
     <section className="rounded-2xl bg-card ring-1 ring-border p-5 lg:p-6">
@@ -26,13 +30,23 @@ export function SummaryOverview() {
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Total Sueldo</span>
           <span className="text-sm font-bold text-foreground font-mono">
-            {formatCOP(activeMonth.salary)}
+            {formatCOP(totalIncome)}
           </span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Total Gastado</span>
           <span className="text-sm font-bold text-foreground font-mono">
             {formatCOP(totalSpent)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-sm text-muted-foreground">Dinero a la fecha</span>
+            <span className="text-[10px] text-muted-foreground/60">según gastos realizados</span>
+          </div>
+          <span className={cn("text-sm font-bold font-mono",
+            moneyToDate >= 0 ? "text-accent" : "text-destructive")}>
+            {formatCOP(moneyToDate)}
           </span>
         </div>
         <div className="my-1 h-px bg-border" />

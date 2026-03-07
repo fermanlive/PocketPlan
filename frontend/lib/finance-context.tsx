@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react"
-import type { MonthData, ExpenseItem, SavingsEntry, BudgetCategory, Subcategory, DebtEntry } from "@/lib/financial-data"
+import type { MonthData, ExpenseItem, SavingsEntry, BudgetCategory, Subcategory, DebtEntry, IncomeEntry, SubItem } from "@/lib/financial-data"
 import {
   initialMonths,
   createDefaultMonth,
@@ -46,6 +46,13 @@ interface FinanceContextValue {
   removeDebt: (id: string) => Promise<void>
   updateDebt: (debt: DebtEntry) => Promise<void>
   updateSalary: (salary: number) => void
+  updateSalaryPersisted: (salary: number) => Promise<void>
+  addExtraIncome: (entry: Omit<IncomeEntry, "id">) => Promise<void>
+  removeExtraIncome: (id: string) => Promise<void>
+  updateExtraIncome: (entry: IncomeEntry) => Promise<void>
+  addSubItem: (categoryId: string, itemId: string, subitem: Omit<SubItem, "id">) => Promise<void>
+  removeSubItem: (categoryId: string, itemId: string, subitemId: string) => Promise<void>
+  updateSubItem: (categoryId: string, itemId: string, subitem: SubItem) => Promise<void>
   updateWeeklyBudget: (index: number, amount: number) => void
   refetchData: () => Promise<void>
   addCategory: (name: string, percentage: number, color: string) => Promise<void>
@@ -348,7 +355,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           {
             method: "PUT",
             headers: authHeaders(),
-            body: JSON.stringify({ name: item.name, amount: item.amount, icon: item.icon, periodic: item.periodic }),
+            body: JSON.stringify({ name: item.name, amount: item.amount, icon: item.icon, periodic: item.periodic, paid: item.paid }),
           }
         )
         if (!response.ok) {
@@ -577,6 +584,298 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     [updateActiveMonth]
   )
 
+  const updateSalaryPersisted = useCallback(
+    async (salary: number) => {
+      const prevSalary = activeMonth.salary
+      updateSalary(salary)
+      try {
+        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/salary`, {
+          method: "PUT",
+          headers: authHeaders(),
+          body: JSON.stringify({ salary }),
+        })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        updateSalary(prevSalary)
+        setError(err instanceof Error ? err.message : "Failed to update salary")
+        console.error("Error updating salary:", err)
+      }
+    },
+    [updateSalary, activeMonth.salary, activeMonthId]
+  )
+
+  const addExtraIncome = useCallback(
+    async (entry: Omit<IncomeEntry, "id">) => {
+      const tempId = `income-temp-${Date.now()}`
+      const tempEntry: IncomeEntry = { ...entry, id: tempId }
+      updateActiveMonth((m) => ({
+        ...m,
+        extraIncomes: [...(m.extraIncomes ?? []), tempEntry],
+      }))
+
+      try {
+        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/extra-incomes`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(entry),
+        })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+        const serverEntry: IncomeEntry = await res.json()
+        updateActiveMonth((m) => ({
+          ...m,
+          extraIncomes: (m.extraIncomes ?? []).map((e) => (e.id === tempId ? serverEntry : e)),
+        }))
+      } catch (err) {
+        updateActiveMonth((m) => ({
+          ...m,
+          extraIncomes: (m.extraIncomes ?? []).filter((e) => e.id !== tempId),
+        }))
+        setError(err instanceof Error ? err.message : "Failed to add income")
+        console.error("Error adding extra income:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const removeExtraIncome = useCallback(
+    async (id: string) => {
+      let removed: IncomeEntry | null = null
+      updateActiveMonth((m) => {
+        removed = (m.extraIncomes ?? []).find((e) => e.id === id) ?? null
+        return { ...m, extraIncomes: (m.extraIncomes ?? []).filter((e) => e.id !== id) }
+      })
+
+      try {
+        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/extra-incomes/${id}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (removed) {
+          updateActiveMonth((m) => ({
+            ...m,
+            extraIncomes: [...(m.extraIncomes ?? []), removed!],
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to remove income")
+        console.error("Error removing extra income:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const updateExtraIncome = useCallback(
+    async (entry: IncomeEntry) => {
+      let previous: IncomeEntry | null = null
+      updateActiveMonth((m) => {
+        previous = (m.extraIncomes ?? []).find((e) => e.id === entry.id) ?? null
+        return {
+          ...m,
+          extraIncomes: (m.extraIncomes ?? []).map((e) => (e.id === entry.id ? entry : e)),
+        }
+      })
+
+      try {
+        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/extra-incomes/${entry.id}`, {
+          method: "PUT",
+          headers: authHeaders(),
+          body: JSON.stringify({ name: entry.name, amount: entry.amount, date: entry.date }),
+        })
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (previous) {
+          updateActiveMonth((m) => ({
+            ...m,
+            extraIncomes: (m.extraIncomes ?? []).map((e) => (e.id === entry.id ? previous! : e)),
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to update income")
+        console.error("Error updating extra income:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const addSubItem = useCallback(
+    async (categoryId: string, itemId: string, subitem: Omit<SubItem, "id">) => {
+      const tempId = `subitem-temp-${Date.now()}`
+      const tempSub: SubItem = { ...subitem, id: tempId }
+      updateActiveMonth((m) => ({
+        ...m,
+        categories: m.categories.map((c) =>
+          c.id === categoryId
+            ? {
+                ...c,
+                items: c.items.map((i) =>
+                  i.id === itemId
+                    ? {
+                        ...i,
+                        subitems: [...(i.subitems ?? []), tempSub],
+                        amount: [...(i.subitems ?? []), tempSub].reduce((s, sub) => s + sub.amount, 0),
+                      }
+                    : i
+                ),
+              }
+            : c
+        ),
+      }))
+
+      try {
+        const res = await fetch(
+          `${API_URL}/month-data/${activeMonthId}/categories/${categoryId}/items/${itemId}/subitems`,
+          {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(subitem),
+          }
+        )
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+        const serverSub: SubItem = await res.json()
+        updateActiveMonth((m) => ({
+          ...m,
+          categories: m.categories.map((c) =>
+            c.id === categoryId
+              ? {
+                  ...c,
+                  items: c.items.map((i) => {
+                    if (i.id !== itemId) return i
+                    const newSubs = (i.subitems ?? []).map((s) => (s.id === tempId ? serverSub : s))
+                    return { ...i, subitems: newSubs, amount: newSubs.reduce((s, sub) => s + sub.amount, 0) }
+                  }),
+                }
+              : c
+          ),
+        }))
+      } catch (err) {
+        updateActiveMonth((m) => ({
+          ...m,
+          categories: m.categories.map((c) =>
+            c.id === categoryId
+              ? {
+                  ...c,
+                  items: c.items.map((i) => {
+                    if (i.id !== itemId) return i
+                    const newSubs = (i.subitems ?? []).filter((s) => s.id !== tempId)
+                    return { ...i, subitems: newSubs, amount: newSubs.reduce((s, sub) => s + sub.amount, 0) }
+                  }),
+                }
+              : c
+          ),
+        }))
+        setError(err instanceof Error ? err.message : "Failed to add subitem")
+        console.error("Error adding subitem:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const removeSubItem = useCallback(
+    async (categoryId: string, itemId: string, subitemId: string) => {
+      let removedSub: SubItem | null = null
+      updateActiveMonth((m) => ({
+        ...m,
+        categories: m.categories.map((c) =>
+          c.id === categoryId
+            ? {
+                ...c,
+                items: c.items.map((i) => {
+                  if (i.id !== itemId) return i
+                  removedSub = (i.subitems ?? []).find((s) => s.id === subitemId) ?? null
+                  const newSubs = (i.subitems ?? []).filter((s) => s.id !== subitemId)
+                  return { ...i, subitems: newSubs, amount: newSubs.length > 0 ? newSubs.reduce((s, sub) => s + sub.amount, 0) : i.amount }
+                }),
+              }
+            : c
+        ),
+      }))
+
+      try {
+        const res = await fetch(
+          `${API_URL}/month-data/${activeMonthId}/categories/${categoryId}/items/${itemId}/subitems/${subitemId}`,
+          { method: "DELETE", headers: authHeaders() }
+        )
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (removedSub) {
+          updateActiveMonth((m) => ({
+            ...m,
+            categories: m.categories.map((c) =>
+              c.id === categoryId
+                ? {
+                    ...c,
+                    items: c.items.map((i) => {
+                      if (i.id !== itemId) return i
+                      const newSubs = [...(i.subitems ?? []), removedSub!]
+                      return { ...i, subitems: newSubs, amount: newSubs.reduce((s, sub) => s + sub.amount, 0) }
+                    }),
+                  }
+                : c
+            ),
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to remove subitem")
+        console.error("Error removing subitem:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
+  const updateSubItem = useCallback(
+    async (categoryId: string, itemId: string, subitem: SubItem) => {
+      let prevSub: SubItem | null = null
+      updateActiveMonth((m) => ({
+        ...m,
+        categories: m.categories.map((c) =>
+          c.id === categoryId
+            ? {
+                ...c,
+                items: c.items.map((i) => {
+                  if (i.id !== itemId) return i
+                  prevSub = (i.subitems ?? []).find((s) => s.id === subitem.id) ?? null
+                  const newSubs = (i.subitems ?? []).map((s) => (s.id === subitem.id ? subitem : s))
+                  return { ...i, subitems: newSubs, amount: newSubs.reduce((s, sub) => s + sub.amount, 0) }
+                }),
+              }
+            : c
+        ),
+      }))
+
+      try {
+        const res = await fetch(
+          `${API_URL}/month-data/${activeMonthId}/categories/${categoryId}/items/${itemId}/subitems/${subitem.id}`,
+          {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify({ name: subitem.name, amount: subitem.amount, note: subitem.note, paid: subitem.paid }),
+          }
+        )
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+      } catch (err) {
+        if (prevSub) {
+          updateActiveMonth((m) => ({
+            ...m,
+            categories: m.categories.map((c) =>
+              c.id === categoryId
+                ? {
+                    ...c,
+                    items: c.items.map((i) => {
+                      if (i.id !== itemId) return i
+                      const newSubs = (i.subitems ?? []).map((s) => (s.id === subitem.id ? prevSub! : s))
+                      return { ...i, subitems: newSubs, amount: newSubs.reduce((s, sub) => s + sub.amount, 0) }
+                    }),
+                  }
+                : c
+            ),
+          }))
+        }
+        setError(err instanceof Error ? err.message : "Failed to update subitem")
+        console.error("Error updating subitem:", err)
+      }
+    },
+    [updateActiveMonth, activeMonthId]
+  )
+
   const updateWeeklyBudget = useCallback(
     (index: number, amount: number) => {
       updateActiveMonth((m) => ({
@@ -775,6 +1074,13 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         removeDebt,
         updateDebt,
         updateSalary,
+        updateSalaryPersisted,
+        addExtraIncome,
+        removeExtraIncome,
+        updateExtraIncome,
+        addSubItem,
+        removeSubItem,
+        updateSubItem,
         updateWeeklyBudget,
         refetchData: fetchMonthData,
         addCategory,

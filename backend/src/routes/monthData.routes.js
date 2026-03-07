@@ -229,6 +229,127 @@ router.delete('/month-data/:monthId/debts/:debtId', async (req, res) => {
   }
 });
 
+// ─── Salary ────────────────────────────────────────────────────────────────────
+
+router.put('/month-data/:monthId/salary', async (req, res) => {
+  try {
+    const { monthId } = req.params;
+    const { salary } = req.body;
+
+    if (salary === undefined || typeof salary !== 'number' || salary < 0) {
+      return res.status(400).json({ error: 'salary must be a non-negative number' });
+    }
+
+    const result = await monthDataService.updateSalary(monthId, salary, req.user.id);
+    if (!result) return res.status(404).json({ error: 'Month not found' });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── Extra Incomes ──────────────────────────────────────────────────────────────
+
+router.post('/month-data/:monthId/extra-incomes', async (req, res) => {
+  try {
+    const { monthId } = req.params;
+    const { name, amount, date } = req.body;
+
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (amount === undefined || typeof amount !== 'number' || amount < 0) {
+      return res.status(400).json({ error: 'amount must be a non-negative number' });
+    }
+
+    const income = await monthDataService.createExtraIncome(monthId, { name, amount, date }, req.user.id);
+    if (!income) return res.status(404).json({ error: 'Month not found' });
+    res.status(201).json(income);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/month-data/:monthId/extra-incomes/:incomeId', async (req, res) => {
+  try {
+    const { monthId, incomeId } = req.params;
+    const { name, amount, date } = req.body;
+
+    if (amount !== undefined && (typeof amount !== 'number' || amount < 0)) {
+      return res.status(400).json({ error: 'amount must be a non-negative number' });
+    }
+
+    const income = await monthDataService.updateExtraIncome(monthId, incomeId, { name, amount, date }, req.user.id);
+    if (!income) return res.status(404).json({ error: 'Income not found' });
+    res.json(income);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/month-data/:monthId/extra-incomes/:incomeId', async (req, res) => {
+  try {
+    const { monthId, incomeId } = req.params;
+    const deleted = await monthDataService.deleteExtraIncome(monthId, incomeId, req.user.id);
+    if (!deleted) return res.status(404).json({ error: 'Income not found' });
+    res.json({ message: 'Income deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── SubItems ───────────────────────────────────────────────────────────────────
+
+router.post('/month-data/:monthId/categories/:catId/items/:itemId/subitems', async (req, res) => {
+  try {
+    const { monthId, catId, itemId } = req.params;
+    const { name, amount, note } = req.body;
+
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (amount === undefined || typeof amount !== 'number' || amount < 0) {
+      return res.status(400).json({ error: 'amount must be a non-negative number' });
+    }
+
+    const sub = await monthDataService.createSubItem(monthId, catId, itemId, { name, amount, note }, req.user.id);
+    if (!sub) return res.status(404).json({ error: 'Month, category, or item not found' });
+    res.status(201).json(sub);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/month-data/:monthId/categories/:catId/items/:itemId/subitems/:subitemId', async (req, res) => {
+  try {
+    const { monthId, catId, itemId, subitemId } = req.params;
+    const { name, amount, note, paid } = req.body;
+
+    if (amount !== undefined && (typeof amount !== 'number' || amount < 0)) {
+      return res.status(400).json({ error: 'amount must be a non-negative number' });
+    }
+
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (amount !== undefined) updates.amount = amount;
+    if (note !== undefined) updates.note = note;
+    if (paid !== undefined) updates.paid = paid;
+
+    const sub = await monthDataService.updateSubItem(monthId, catId, itemId, subitemId, updates, req.user.id);
+    if (!sub) return res.status(404).json({ error: 'SubItem not found' });
+    res.json(sub);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/month-data/:monthId/categories/:catId/items/:itemId/subitems/:subitemId', async (req, res) => {
+  try {
+    const { monthId, catId, itemId, subitemId } = req.params;
+    const deleted = await monthDataService.deleteSubItem(monthId, catId, itemId, subitemId, req.user.id);
+    if (!deleted) return res.status(404).json({ error: 'SubItem not found' });
+    res.json({ message: 'SubItem deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/month-data/:monthId/categories', async (req, res) => {
   try {
     const { monthId } = req.params;
@@ -278,7 +399,7 @@ router.delete('/month-data/:monthId/categories/:catId', async (req, res) => {
 router.put('/month-data/:monthId/categories/:categoryId/items/:itemId', async (req, res) => {
   try {
     const { monthId, categoryId, itemId } = req.params;
-    const { name, amount, icon, periodic } = req.body;
+    const { name, amount, icon, periodic, paid } = req.body;
 
     if (amount !== undefined && (typeof amount !== 'number' || amount < 0)) {
       return res.status(400).json({ error: 'Amount must be a positive number' });
@@ -289,6 +410,7 @@ router.put('/month-data/:monthId/categories/:categoryId/items/:itemId', async (r
     if (amount !== undefined) updates.amount = amount;
     if (icon !== undefined) updates.icon = icon;
     if (periodic !== undefined) updates.periodic = periodic;
+    if (paid !== undefined) updates.paid = paid;
 
     const item = await monthDataService.updateItem(monthId, categoryId, itemId, updates, req.user.id);
     if (!item) {

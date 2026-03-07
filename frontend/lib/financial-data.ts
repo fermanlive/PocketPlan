@@ -1,9 +1,26 @@
+export interface SubItem {
+  id: string
+  name: string
+  amount: number
+  note?: string
+  paid?: boolean
+}
+
 export interface ExpenseItem {
   id: string
   name: string
   amount: number
   icon?: string
   periodic?: boolean
+  subitems?: SubItem[]
+  paid?: boolean
+}
+
+export interface IncomeEntry {
+  id: string
+  name: string
+  amount: number
+  date: string
 }
 
 export interface BudgetCategory {
@@ -59,6 +76,7 @@ export interface MonthData {
   year: number
   month: number
   salary: number
+  extraIncomes: IncomeEntry[]
   categories: BudgetCategory[]
   weeklyBudgets: WeeklyBudget[]
   savings: SavingsEntry[]
@@ -137,6 +155,7 @@ export function createDefaultMonth(year: number, month: number, salary: number):
       { label: "Semana 1", amount: 150000 },
       { label: "Semana 2", amount: 150000 },
     ],
+    extraIncomes: [],
     savings: [],
     debts: [],
   }
@@ -223,6 +242,7 @@ export const initialMonths: MonthData[] = [
       { label: "Semana 1", amount: 150000 },
       { label: "Semana 2", amount: 150000 },
     ],
+    extraIncomes: [],
     savings: [
       { id: "s1", name: "Fondo emergencia", amount: 500000, date: "2025-11-01" },
       { id: "s2", name: "Vacaciones", amount: 300000, date: "2025-11-15" },
@@ -230,6 +250,30 @@ export const initialMonths: MonthData[] = [
     debts: [],
   },
 ]
+
+export function getTotalIncome(month: MonthData): number {
+  return month.salary + (month.extraIncomes ?? []).reduce((sum, e) => sum + e.amount, 0)
+}
+
+export function getMoneyToDate(month: MonthData): number {
+  const totalIncome = getTotalIncome(month)
+  const paidAmount = month.categories.reduce((sum, cat) => {
+    return sum + cat.items.reduce((catSum, item) => {
+      if ((item.subitems ?? []).length > 0) {
+        return catSum + (item.subitems ?? []).filter((s) => s.paid).reduce((s, sub) => s + sub.amount, 0)
+      }
+      return catSum + (item.paid ? item.amount : 0)
+    }, 0)
+  }, 0)
+  return totalIncome - paidAmount
+}
+
+export function getItemEffectiveAmount(item: ExpenseItem): number {
+  if (item.subitems && item.subitems.length > 0) {
+    return item.subitems.reduce((sum, s) => sum + s.amount, 0)
+  }
+  return item.amount
+}
 
 export function formatCOP(amount: number): string {
   return new Intl.NumberFormat("es-CO", {
