@@ -4,6 +4,7 @@ const WeeklyBudget = require('./WeeklyBudget');
 const SavingsEntry = require('./SavingsEntry');
 const DebtEntrySchema = require('./DebtEntry');
 const IncomeEntrySchema = require('./IncomeEntry');
+const ExtraFundSchema = require('./ExtraFund');
 
 const monthDataSchema = new mongoose.Schema({
   id: {
@@ -30,6 +31,7 @@ const monthDataSchema = new mongoose.Schema({
   savings: [SavingsEntry.schema],
   debts: { type: [DebtEntrySchema], default: [] },
   extraIncomes: { type: [IncomeEntrySchema], default: [] },
+  extraFunds: { type: [ExtraFundSchema], default: [] },
   userId: {
     type: String,
     required: false,

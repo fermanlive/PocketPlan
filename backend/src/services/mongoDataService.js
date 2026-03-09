@@ -314,6 +314,93 @@ async function deleteDebt(monthId, debtId, userId) {
   return !!updated;
 }
 
+// ─── ExtraFund CRUD ─────────────────────────────────────────────────────────────
+
+async function createExtraFund(monthId, fund, userId) {
+  const newFund = {
+    id: `fund-${Date.now()}`,
+    name: fund.name || 'Ingreso Extra',
+    totalAmount: fund.totalAmount || 0,
+    source: fund.source || 'otro',
+    date: fund.date || new Date().toISOString().split('T')[0],
+    items: [],
+  };
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $push: { extraFunds: newFund } },
+    { new: true }
+  ).lean();
+  if (!updated) return null;
+  return updated.extraFunds.find(f => f.id === newFund.id) || null;
+}
+
+async function updateExtraFund(monthId, fundId, updates, userId) {
+  const setFields = {};
+  for (const [key, val] of Object.entries(updates)) {
+    setFields[`extraFunds.$[f].${key}`] = val;
+  }
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $set: setFields },
+    { arrayFilters: [{ 'f.id': fundId }], new: true }
+  ).lean();
+  if (!updated) return null;
+  return updated.extraFunds.find(f => f.id === fundId) || null;
+}
+
+async function deleteExtraFund(monthId, fundId, userId) {
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $pull: { extraFunds: { id: fundId } } }
+  ).lean();
+  return !!updated;
+}
+
+// ─── ExtraFund Item CRUD ─────────────────────────────────────────────────────────
+
+async function createExtraFundItem(monthId, fundId, item, userId) {
+  const newItem = {
+    id: `fund-item-${Date.now()}`,
+    name: item.name || 'Asignación',
+    amount: item.amount || 0,
+    icon: item.icon || null,
+    note: item.note || null,
+    subitems: [],
+  };
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $push: { 'extraFunds.$[f].items': newItem } },
+    { arrayFilters: [{ 'f.id': fundId }], new: true }
+  ).lean();
+  if (!updated) return null;
+  const fund = updated.extraFunds.find(f => f.id === fundId);
+  return fund ? fund.items.find(i => i.id === newItem.id) || null : null;
+}
+
+async function updateExtraFundItem(monthId, fundId, itemId, updates, userId) {
+  const setFields = {};
+  for (const [key, val] of Object.entries(updates)) {
+    setFields[`extraFunds.$[f].items.$[i].${key}`] = val;
+  }
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $set: setFields },
+    { arrayFilters: [{ 'f.id': fundId }, { 'i.id': itemId }], new: true }
+  ).lean();
+  if (!updated) return null;
+  const fund = updated.extraFunds.find(f => f.id === fundId);
+  return fund ? fund.items.find(i => i.id === itemId) || null : null;
+}
+
+async function deleteExtraFundItem(monthId, fundId, itemId, userId) {
+  const updated = await MonthData.findOneAndUpdate(
+    { id: monthId, userId: userId || null },
+    { $pull: { 'extraFunds.$[f].items': { id: itemId } } },
+    { arrayFilters: [{ 'f.id': fundId }] }
+  ).lean();
+  return !!updated;
+}
+
 // ─── Salary update ─────────────────────────────────────────────────────────────
 
 async function updateSalary(monthId, salary, userId) {
@@ -592,6 +679,12 @@ module.exports = {
   createDebt,
   updateDebt,
   deleteDebt,
+  createExtraFund,
+  updateExtraFund,
+  deleteExtraFund,
+  createExtraFundItem,
+  updateExtraFundItem,
+  deleteExtraFundItem,
   updateSalary,
   createExtraIncome,
   updateExtraIncome,

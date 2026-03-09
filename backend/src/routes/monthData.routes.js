@@ -229,6 +229,66 @@ router.delete('/month-data/:monthId/debts/:debtId', async (req, res) => {
   }
 });
 
+// ─── ExtraFunds ─────────────────────────────────────────────────────────────────
+
+router.post('/month-data/:monthId/extra-funds', async (req, res) => {
+  try {
+    const result = await monthDataService.createExtraFund(req.params.monthId, req.body, req.user.id);
+    if (!result) return res.status(404).json({ error: 'Month not found' });
+    res.status(201).json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/month-data/:monthId/extra-funds/:fundId', async (req, res) => {
+  try {
+    const result = await monthDataService.updateExtraFund(
+      req.params.monthId, req.params.fundId, req.body, req.user.id
+    );
+    if (!result) return res.status(404).json({ error: 'Fund not found' });
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/month-data/:monthId/extra-funds/:fundId', async (req, res) => {
+  try {
+    const ok = await monthDataService.deleteExtraFund(
+      req.params.monthId, req.params.fundId, req.user.id
+    );
+    if (!ok) return res.status(404).json({ error: 'Fund not found' });
+    res.status(204).end();
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/month-data/:monthId/extra-funds/:fundId/items', async (req, res) => {
+  try {
+    const result = await monthDataService.createExtraFundItem(
+      req.params.monthId, req.params.fundId, req.body, req.user.id
+    );
+    if (!result) return res.status(404).json({ error: 'Fund not found' });
+    res.status(201).json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/month-data/:monthId/extra-funds/:fundId/items/:itemId', async (req, res) => {
+  try {
+    const result = await monthDataService.updateExtraFundItem(
+      req.params.monthId, req.params.fundId, req.params.itemId, req.body, req.user.id
+    );
+    if (!result) return res.status(404).json({ error: 'Item not found' });
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/month-data/:monthId/extra-funds/:fundId/items/:itemId', async (req, res) => {
+  try {
+    const ok = await monthDataService.deleteExtraFundItem(
+      req.params.monthId, req.params.fundId, req.params.itemId, req.user.id
+    );
+    if (!ok) return res.status(404).json({ error: 'Item not found' });
+    res.status(204).end();
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── Salary ────────────────────────────────────────────────────────────────────
 
 router.put('/month-data/:monthId/salary', async (req, res) => {

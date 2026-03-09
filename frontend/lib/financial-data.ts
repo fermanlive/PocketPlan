@@ -71,6 +71,32 @@ export interface ProjectionMonth {
   principal: number
 }
 
+export interface ExtraFundItem {
+  id: string
+  name: string
+  amount: number
+  icon?: string
+  note?: string
+  subitems?: SubItem[]
+}
+
+export interface ExtraFund {
+  id: string
+  name: string
+  totalAmount: number
+  source: "cesantias" | "prima" | "venta" | "bono" | "otro"
+  date: string
+  items: ExtraFundItem[]
+}
+
+export const SOURCE_LABELS: Record<ExtraFund["source"], string> = {
+  cesantias: "Cesantías",
+  prima: "Prima",
+  venta: "Venta",
+  bono: "Bono / Incentivo",
+  otro: "Otro",
+}
+
 export interface MonthData {
   id: string
   year: number
@@ -81,6 +107,7 @@ export interface MonthData {
   weeklyBudgets: WeeklyBudget[]
   savings: SavingsEntry[]
   debts: DebtEntry[]
+  extraFunds?: ExtraFund[]
 }
 
 export const MONTH_NAMES = [
@@ -158,6 +185,7 @@ export function createDefaultMonth(year: number, month: number, salary: number):
     extraIncomes: [],
     savings: [],
     debts: [],
+    extraFunds: [],
   }
 }
 
@@ -324,4 +352,17 @@ export function calculateProjection(debt: DebtEntry): ProjectionMonth[] {
 
 export function getTotalInterest(debt: DebtEntry): number {
   return calculateProjection(debt).reduce((sum, m) => sum + m.interest, 0)
+}
+
+export function getExtraFundAllocated(fund: ExtraFund): number {
+  return fund.items.reduce((sum, item) => {
+    if (item.subitems && item.subitems.length > 0) {
+      return sum + item.subitems.reduce((s, sub) => s + sub.amount, 0)
+    }
+    return sum + item.amount
+  }, 0)
+}
+
+export function getExtraFundRemaining(fund: ExtraFund): number {
+  return fund.totalAmount - getExtraFundAllocated(fund)
 }

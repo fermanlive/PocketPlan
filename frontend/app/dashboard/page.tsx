@@ -12,8 +12,9 @@ import { BudgetDistribution } from "@/components/budget-distribution"
 import { SavingsView } from "@/components/savings-view"
 import { DetailItemsView } from "@/components/detail-items-view"
 import { ProjectionsView } from "@/components/projections-view"
+import { ExcedentesView } from "@/components/excedentes-view"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LayoutDashboard, ListTodo, PiggyBank, TrendingDown } from "lucide-react"
+import { LayoutDashboard, ListTodo, PiggyBank, TrendingDown, Sparkles } from "lucide-react"
 
 function Dashboard() {
   const { activeMonth, isLoading, error } = useFinance()
@@ -77,6 +78,13 @@ function Dashboard() {
               <TrendingDown className="h-3.5 w-3.5" />
               Proyecciones
             </TabsTrigger>
+            <TabsTrigger
+              value="excedentes"
+              className="gap-2 rounded-full px-4 py-1.5 text-sm font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Excedentes
+            </TabsTrigger>
           </TabsList>
 
           {/* TAB 1 — Resumen General */}
@@ -114,6 +122,11 @@ function Dashboard() {
           {/* TAB 4 — Proyecciones */}
           <TabsContent value="proyecciones" className="mt-6">
             <ProjectionsView />
+          </TabsContent>
+
+          {/* TAB 5 — Excedentes */}
+          <TabsContent value="excedentes" className="mt-6">
+            <ExcedentesView />
           </TabsContent>
         </Tabs>
       </main>

@@ -344,13 +344,15 @@ function InlineEditRow({
         </div>
       ) : (
         <div className="group/row flex items-center gap-2.5 py-2.5">
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={expanded ? "Contraer" : "Expandir"}
-          >
-            {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          </button>
+          {hasSubitems && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={expanded ? "Contraer" : "Expandir"}
+            >
+              {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            </button>
+          )}
           <ItemIcon icon={item.icon} categoryColor={categoryColor} size="sm" />
           <span className={cn("flex-1 text-sm text-foreground leading-tight", item.paid && !hasSubitems && "line-through text-muted-foreground")}>
             {item.name}
@@ -402,7 +404,7 @@ function InlineEditRow({
         </div>
       )}
 
-      {expanded && <SubItemPanel item={item} categoryId={categoryId} />}
+      {expanded && (editing || hasSubitems) && <SubItemPanel item={item} categoryId={categoryId} />}
     </div>
   )
 }

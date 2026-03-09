@@ -320,6 +320,86 @@ class MockDataService {
     return true;
   }
 
+  createExtraFund(monthId, fund, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+    if (!monthData.extraFunds) monthData.extraFunds = [];
+    const newFund = {
+      id: `fund-${Date.now()}`,
+      name: fund.name || 'Ingreso Extra',
+      totalAmount: fund.totalAmount || 0,
+      source: fund.source || 'otro',
+      date: fund.date || new Date().toISOString().split('T')[0],
+      items: [],
+    };
+    monthData.extraFunds.push(newFund);
+    this.saveData();
+    return newFund;
+  }
+
+  updateExtraFund(monthId, fundId, updates, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+    const idx = (monthData.extraFunds || []).findIndex(f => f.id === fundId);
+    if (idx === -1) return null;
+    monthData.extraFunds[idx] = { ...monthData.extraFunds[idx], ...updates };
+    this.saveData();
+    return monthData.extraFunds[idx];
+  }
+
+  deleteExtraFund(monthId, fundId, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return false;
+    const idx = (monthData.extraFunds || []).findIndex(f => f.id === fundId);
+    if (idx === -1) return false;
+    monthData.extraFunds.splice(idx, 1);
+    this.saveData();
+    return true;
+  }
+
+  createExtraFundItem(monthId, fundId, item, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+    const fund = (monthData.extraFunds || []).find(f => f.id === fundId);
+    if (!fund) return null;
+    if (!fund.items) fund.items = [];
+    const newItem = {
+      id: `fund-item-${Date.now()}`,
+      name: item.name || 'Asignación',
+      amount: item.amount || 0,
+      icon: item.icon || null,
+      note: item.note || null,
+      subitems: [],
+    };
+    fund.items.push(newItem);
+    this.saveData();
+    return newItem;
+  }
+
+  updateExtraFundItem(monthId, fundId, itemId, updates, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return null;
+    const fund = (monthData.extraFunds || []).find(f => f.id === fundId);
+    if (!fund) return null;
+    const idx = (fund.items || []).findIndex(i => i.id === itemId);
+    if (idx === -1) return null;
+    fund.items[idx] = { ...fund.items[idx], ...updates };
+    this.saveData();
+    return fund.items[idx];
+  }
+
+  deleteExtraFundItem(monthId, fundId, itemId, userId) {
+    const monthData = this.getById(monthId);
+    if (!monthData) return false;
+    const fund = (monthData.extraFunds || []).find(f => f.id === fundId);
+    if (!fund) return false;
+    const idx = (fund.items || []).findIndex(i => i.id === itemId);
+    if (idx === -1) return false;
+    fund.items.splice(idx, 1);
+    this.saveData();
+    return true;
+  }
+
   createItem(monthId, categoryId, item) {
     const monthData = this.getById(monthId);
     if (!monthData) return null;
