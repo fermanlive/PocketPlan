@@ -531,10 +531,8 @@ function NewFundDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
 // ─── ExcedentesView (main) ────────────────────────────────────────────────────
 
 export function ExcedentesView() {
-  const { activeMonth } = useFinance()
+  const { extraFunds: funds } = useFinance()
   const [dialogOpen, setDialogOpen] = useState(false)
-
-  const funds = activeMonth.extraFunds ?? []
 
   return (
     <div className="space-y-6">

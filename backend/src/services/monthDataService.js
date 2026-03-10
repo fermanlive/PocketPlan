@@ -57,6 +57,22 @@ const monthDataService = {
   async createSubItem(monthId, catId, itemId, sub, userId)      { return activeService.createSubItem(monthId, catId, itemId, sub, userId); },
   async updateSubItem(monthId, catId, itemId, subId, upd, uid)  { return activeService.updateSubItem(monthId, catId, itemId, subId, upd, uid); },
   async deleteSubItem(monthId, catId, itemId, subId, userId)    { return activeService.deleteSubItem(monthId, catId, itemId, subId, userId); },
+  // User-level entities (not month-scoped)
+  async getUserSavings(userId)                                  { return activeService.getUserSavings(userId); },
+  async createUserSaving(saving, userId)                        { return activeService.createUserSaving(saving, userId); },
+  async updateUserSaving(id, updates, userId)                   { return activeService.updateUserSaving(id, updates, userId); },
+  async deleteUserSaving(id, userId)                            { return activeService.deleteUserSaving(id, userId); },
+  async getUserDebts(userId)                                    { return activeService.getUserDebts(userId); },
+  async createUserDebt(debt, userId)                            { return activeService.createUserDebt(debt, userId); },
+  async updateUserDebt(id, updates, userId)                     { return activeService.updateUserDebt(id, updates, userId); },
+  async deleteUserDebt(id, userId)                              { return activeService.deleteUserDebt(id, userId); },
+  async getUserExtraFunds(userId)                               { return activeService.getUserExtraFunds(userId); },
+  async createUserExtraFund(fund, userId)                       { return activeService.createUserExtraFund(fund, userId); },
+  async updateUserExtraFund(id, updates, userId)                { return activeService.updateUserExtraFund(id, updates, userId); },
+  async deleteUserExtraFund(id, userId)                         { return activeService.deleteUserExtraFund(id, userId); },
+  async createUserExtraFundItem(fundId, item, userId)           { return activeService.createUserExtraFundItem(fundId, item, userId); },
+  async updateUserExtraFundItem(fundId, itemId, upd, userId)    { return activeService.updateUserExtraFundItem(fundId, itemId, upd, userId); },
+  async deleteUserExtraFundItem(fundId, itemId, userId)         { return activeService.deleteUserExtraFundItem(fundId, itemId, userId); },
 };
 
 module.exports = monthDataService;

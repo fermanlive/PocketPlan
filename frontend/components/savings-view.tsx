@@ -18,7 +18,7 @@ import {
 import { Plus, Trash2, PiggyBank, TrendingUp, Pencil } from "lucide-react"
 
 export function SavingsView() {
-  const { activeMonth, addSavingsEntry, removeSavingsEntry, updateSavingsEntry } = useFinance()
+  const { savings, addSavingsEntry, removeSavingsEntry, updateSavingsEntry } = useFinance()
 
   // Add dialog state
   const [addOpen, setAddOpen] = useState(false)
@@ -33,7 +33,7 @@ export function SavingsView() {
   const [editAmount, setEditAmount] = useState("")
   const [editDate, setEditDate] = useState("")
 
-  const totalSavings = activeMonth.savings.reduce((s, e) => s + e.amount, 0)
+  const totalSavings = savings.reduce((s, e) => s + e.amount, 0)
 
   function handleAdd() {
     const a = parseInt(amount, 10)
@@ -92,7 +92,7 @@ export function SavingsView() {
               Entradas
             </span>
             <span className="text-xl font-bold text-foreground font-mono">
-              {activeMonth.savings.length}
+              {savings.length}
             </span>
           </div>
         </div>
@@ -188,15 +188,15 @@ export function SavingsView() {
 
       {/* Savings list */}
       <div className="flex flex-col gap-2">
-        {activeMonth.savings.length === 0 && (
+        {savings.length === 0 && (
           <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border py-12 text-center">
             <PiggyBank className="h-8 w-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
-              No hay ahorros registrados este mes
+              No hay ahorros registrados
             </p>
           </div>
         )}
-        {activeMonth.savings.map((entry) => (
+        {savings.map((entry) => (
           <div
             key={entry.id}
             className="group flex items-center justify-between rounded-xl bg-card px-4 py-3 ring-1 ring-border transition-colors hover:bg-secondary/40"

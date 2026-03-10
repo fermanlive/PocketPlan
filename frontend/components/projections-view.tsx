@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useFinance } from "@/lib/finance-context"
+import type { DebtEntry } from "@/lib/financial-data"
 import { calculateProjection, getTotalInterest, formatCOP } from "@/lib/financial-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Trash2, Plus, TrendingDown } from "lucide-react"
 
 export function ProjectionsView() {
-  const { activeMonth, addDebt, removeDebt, updateDebt } = useFinance()
+  const { activeMonth, debts, addDebt, removeDebt, updateDebt } = useFinance()
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -63,7 +64,6 @@ export function ProjectionsView() {
     largo: "Largo plazo (>5 años)",
   }
 
-  const debts = activeMonth.debts ?? []
   const debtsByTimeline = {
     corto: debts.filter((d) => d.timeline === "corto"),
     mediano: debts.filter((d) => d.timeline === "mediano"),
@@ -215,7 +215,7 @@ export function ProjectionsView() {
           </TabsTrigger>
         </TabsList>
 
-        {(Object.entries(debtsByTimeline) as [string, typeof activeMonth.debts][]).map(
+        {(Object.entries(debtsByTimeline) as [string, DebtEntry[]][]).map(
           ([timelineKey, debts]) => (
             <TabsContent key={timelineKey} value={timelineKey} className="mt-6 space-y-6">
               {debts.length === 0 ? (

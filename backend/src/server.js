@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const connectDB = require('./config/database');
 const monthDataService = require('./services/monthDataService');
 const monthDataRoutes = require('./routes/monthData.routes');
+const userDataRoutes = require('./routes/userData.routes');
 const authRoutes = require('./routes/auth.routes');
 const authenticateToken = require('./middleware/authenticateToken');
 
@@ -34,6 +35,7 @@ async function startServer() {
   if (mongoConnected) {
     app.use('/api/auth', authRoutes);
     app.use('/api', authenticateToken, monthDataRoutes);
+    app.use('/api', authenticateToken, userDataRoutes);
   } else {
     app.use('/api/auth', (req, res) => {
       res.status(503).json({ error: 'Auth requiere MongoDB. Verifica la conexión a la base de datos.' });

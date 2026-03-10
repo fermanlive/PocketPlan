@@ -2,6 +2,9 @@ const path = require('path');
 const fs = require('fs');
 const MonthData = require('../models/MonthData');
 const Subcategory = require('../models/Subcategory');
+const UserSaving = require('../models/UserSaving');
+const UserDebt = require('../models/UserDebt');
+const UserExtraFund = require('../models/UserExtraFund');
 
 // ─── Seed helpers ──────────────────────────────────────────────────────────────
 
@@ -653,6 +656,145 @@ async function deleteSubcategory(id) {
   return result.deletedCount > 0;
 }
 
+// ─── User-level Savings CRUD ────────────────────────────────────────────────────
+
+async function getUserSavings(userId) {
+  return UserSaving.find({ userId: userId || null }).lean();
+}
+
+async function createUserSaving(saving, userId) {
+  const doc = new UserSaving({
+    id: `saving-${Date.now()}`,
+    name: saving.name || 'Ahorro',
+    amount: saving.amount || 0,
+    date: saving.date || new Date().toISOString().split('T')[0],
+    userId: userId || null,
+  });
+  await doc.save();
+  return doc.toObject();
+}
+
+async function updateUserSaving(savingId, updates, userId) {
+  return UserSaving.findOneAndUpdate(
+    { id: savingId, userId: userId || null },
+    { $set: updates },
+    { new: true }
+  ).lean();
+}
+
+async function deleteUserSaving(savingId, userId) {
+  const result = await UserSaving.deleteOne({ id: savingId, userId: userId || null });
+  return result.deletedCount > 0;
+}
+
+// ─── User-level Debts CRUD ──────────────────────────────────────────────────────
+
+async function getUserDebts(userId) {
+  return UserDebt.find({ userId: userId || null }).lean();
+}
+
+async function createUserDebt(debt, userId) {
+  const doc = new UserDebt({
+    id: `debt-${Date.now()}`,
+    name: debt.name || 'Deuda',
+    principal: debt.principal || 0,
+    monthlyPayment: debt.monthlyPayment || 0,
+    installments: debt.installments || 1,
+    interestRate: debt.interestRate || 0,
+    startDate: debt.startDate || new Date().toISOString().split('T')[0],
+    timeline: debt.timeline || 'mediano',
+    userId: userId || null,
+  });
+  await doc.save();
+  return doc.toObject();
+}
+
+async function updateUserDebt(debtId, updates, userId) {
+  return UserDebt.findOneAndUpdate(
+    { id: debtId, userId: userId || null },
+    { $set: updates },
+    { new: true }
+  ).lean();
+}
+
+async function deleteUserDebt(debtId, userId) {
+  const result = await UserDebt.deleteOne({ id: debtId, userId: userId || null });
+  return result.deletedCount > 0;
+}
+
+// ─── User-level ExtraFunds CRUD ─────────────────────────────────────────────────
+
+async function getUserExtraFunds(userId) {
+  return UserExtraFund.find({ userId: userId || null }).lean();
+}
+
+async function createUserExtraFund(fund, userId) {
+  const doc = new UserExtraFund({
+    id: `fund-${Date.now()}`,
+    name: fund.name || 'Ingreso Extra',
+    totalAmount: fund.totalAmount || 0,
+    source: fund.source || 'otro',
+    date: fund.date || new Date().toISOString().split('T')[0],
+    items: [],
+    userId: userId || null,
+  });
+  await doc.save();
+  return doc.toObject();
+}
+
+async function updateUserExtraFund(fundId, updates, userId) {
+  return UserExtraFund.findOneAndUpdate(
+    { id: fundId, userId: userId || null },
+    { $set: updates },
+    { new: true }
+  ).lean();
+}
+
+async function deleteUserExtraFund(fundId, userId) {
+  const result = await UserExtraFund.deleteOne({ id: fundId, userId: userId || null });
+  return result.deletedCount > 0;
+}
+
+async function createUserExtraFundItem(fundId, item, userId) {
+  const newItem = {
+    id: `fund-item-${Date.now()}`,
+    name: item.name || 'Asignación',
+    amount: item.amount || 0,
+    icon: item.icon || null,
+    note: item.note || null,
+    subitems: [],
+  };
+  const updated = await UserExtraFund.findOneAndUpdate(
+    { id: fundId, userId: userId || null },
+    { $push: { items: newItem } },
+    { new: true }
+  ).lean();
+  if (!updated) return null;
+  return updated.items.find(i => i.id === newItem.id) || null;
+}
+
+async function updateUserExtraFundItem(fundId, itemId, updates, userId) {
+  const setFields = {};
+  for (const [key, val] of Object.entries(updates)) {
+    setFields[`items.$[i].${key}`] = val;
+  }
+  const updated = await UserExtraFund.findOneAndUpdate(
+    { id: fundId, userId: userId || null },
+    { $set: setFields },
+    { arrayFilters: [{ 'i.id': itemId }], new: true }
+  ).lean();
+  if (!updated) return null;
+  return updated.items.find(i => i.id === itemId) || null;
+}
+
+async function deleteUserExtraFundItem(fundId, itemId, userId) {
+  const updated = await UserExtraFund.findOneAndUpdate(
+    { id: fundId, userId: userId || null },
+    { $pull: { items: { id: itemId } } }
+  ).lean();
+  return !!updated;
+}
+
 // ─── Exports ───────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -694,6 +836,21 @@ module.exports = {
   deleteSubItem,
   createMonth,
   deleteMonth,
+  getUserSavings,
+  createUserSaving,
+  updateUserSaving,
+  deleteUserSaving,
+  getUserDebts,
+  createUserDebt,
+  updateUserDebt,
+  deleteUserDebt,
+  getUserExtraFunds,
+  createUserExtraFund,
+  updateUserExtraFund,
+  deleteUserExtraFund,
+  createUserExtraFundItem,
+  updateUserExtraFundItem,
+  deleteUserExtraFundItem,
   getAllSubcategories,
   getSubcategoriesByCategory,
   getSubcategoryById,

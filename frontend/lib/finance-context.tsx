@@ -33,6 +33,9 @@ interface FinanceContextValue {
   isLoading: boolean
   error: string | null
   subcategories: Subcategory[]
+  savings: SavingsEntry[]
+  debts: DebtEntry[]
+  extraFunds: ExtraFund[]
   setActiveMonthId: (id: string) => void
   addMonth: (year: number, month: number, salary: number) => void
   deleteMonth: (id: string) => void
@@ -83,6 +86,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [savings, setSavings] = useState<SavingsEntry[]>([])
+  const [debts, setDebts] = useState<DebtEntry[]>([])
+  const [extraFunds, setExtraFunds] = useState<ExtraFund[]>([])
 
   const fetchMonthData = useCallback(async () => {
     setIsLoading(true)
@@ -148,10 +154,26 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const fetchUserData = useCallback(async () => {
+    try {
+      const [savingsRes, debtsRes, fundsRes] = await Promise.all([
+        fetch(`${API_URL}/savings`, { headers: authHeaders() }),
+        fetch(`${API_URL}/debts`, { headers: authHeaders() }),
+        fetch(`${API_URL}/extra-funds`, { headers: authHeaders() }),
+      ])
+      if (savingsRes.ok) setSavings(await savingsRes.json())
+      if (debtsRes.ok) setDebts(await debtsRes.json())
+      if (fundsRes.ok) setExtraFunds(await fundsRes.json())
+    } catch (err) {
+      console.error("Error fetching user data:", err)
+    }
+  }, [])
+
   useEffect(() => {
     fetchMonthData()
     fetchSubcategories()
-  }, [fetchMonthData, fetchSubcategories])
+    fetchUserData()
+  }, [fetchMonthData, fetchSubcategories, fetchUserData])
 
   const activeMonth = months.find((m) => m.id === activeMonthId) ?? months[0]
 
@@ -389,393 +411,294 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     async (entry: Omit<SavingsEntry, "id">) => {
       const tempId = `saving-temp-${Date.now()}`
       const tempEntry: SavingsEntry = { ...entry, id: tempId }
-      updateActiveMonth((m) => ({
-        ...m,
-        savings: [...m.savings, tempEntry],
-      }))
-
+      setSavings((prev) => [...prev, tempEntry])
       try {
-        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/savings`, {
+        const res = await fetch(`${API_URL}/savings`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify(entry),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         const serverEntry: SavingsEntry = await res.json()
-        updateActiveMonth((m) => ({
-          ...m,
-          savings: m.savings.map((s) => (s.id === tempId ? serverEntry : s)),
-        }))
+        setSavings((prev) => prev.map((s) => (s.id === tempId ? serverEntry : s)))
       } catch (err) {
-        updateActiveMonth((m) => ({
-          ...m,
-          savings: m.savings.filter((s) => s.id !== tempId),
-        }))
+        setSavings((prev) => prev.filter((s) => s.id !== tempId))
         setError(err instanceof Error ? err.message : "Failed to add saving")
         console.error("Error adding saving:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const removeSavingsEntry = useCallback(
     async (id: string) => {
       let removedEntry: SavingsEntry | null = null
-      updateActiveMonth((m) => {
-        removedEntry = m.savings.find((s) => s.id === id) ?? null
-        return { ...m, savings: m.savings.filter((s) => s.id !== id) }
+      setSavings((prev) => {
+        removedEntry = prev.find((s) => s.id === id) ?? null
+        return prev.filter((s) => s.id !== id)
       })
-
       try {
-        const res = await fetch(
-          `${API_URL}/month-data/${activeMonthId}/savings/${id}`,
-          { method: "DELETE", headers: authHeaders() }
-        )
+        const res = await fetch(`${API_URL}/savings/${id}`, { method: "DELETE", headers: authHeaders() })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (removedEntry) {
-          updateActiveMonth((m) => ({
-            ...m,
-            savings: [...m.savings, removedEntry!],
-          }))
-        }
+        if (removedEntry) setSavings((prev) => [...prev, removedEntry!])
         setError(err instanceof Error ? err.message : "Failed to remove saving")
         console.error("Error removing saving:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const updateSavingsEntry = useCallback(
     async (entry: SavingsEntry) => {
       let previousEntry: SavingsEntry | null = null
-      updateActiveMonth((m) => {
-        previousEntry = m.savings.find((s) => s.id === entry.id) ?? null
-        return {
-          ...m,
-          savings: m.savings.map((s) => (s.id === entry.id ? entry : s)),
-        }
+      setSavings((prev) => {
+        previousEntry = prev.find((s) => s.id === entry.id) ?? null
+        return prev.map((s) => (s.id === entry.id ? entry : s))
       })
-
       try {
-        const res = await fetch(
-          `${API_URL}/month-data/${activeMonthId}/savings/${entry.id}`,
-          {
-            method: "PUT",
-            headers: authHeaders(),
-            body: JSON.stringify({ name: entry.name, amount: entry.amount, date: entry.date }),
-          }
-        )
+        const res = await fetch(`${API_URL}/savings/${entry.id}`, {
+          method: "PUT",
+          headers: authHeaders(),
+          body: JSON.stringify({ name: entry.name, amount: entry.amount, date: entry.date }),
+        })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (previousEntry) {
-          updateActiveMonth((m) => ({
-            ...m,
-            savings: m.savings.map((s) => (s.id === entry.id ? previousEntry! : s)),
-          }))
-        }
+        if (previousEntry) setSavings((prev) => prev.map((s) => (s.id === entry.id ? previousEntry! : s)))
         setError(err instanceof Error ? err.message : "Failed to update saving")
         console.error("Error updating saving:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const addDebt = useCallback(
     async (debt: Omit<DebtEntry, "id">) => {
       const tempId = `debt-temp-${Date.now()}`
       const tempDebt: DebtEntry = { ...debt, id: tempId }
-      updateActiveMonth((m) => ({
-        ...m,
-        debts: [...(m.debts ?? []), tempDebt],
-      }))
-
+      setDebts((prev) => [...prev, tempDebt])
       try {
-        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/debts`, {
+        const res = await fetch(`${API_URL}/debts`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify(debt),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         const serverDebt: DebtEntry = await res.json()
-        updateActiveMonth((m) => ({
-          ...m,
-          debts: (m.debts ?? []).map((d) => (d.id === tempId ? serverDebt : d)),
-        }))
+        setDebts((prev) => prev.map((d) => (d.id === tempId ? serverDebt : d)))
       } catch (err) {
-        updateActiveMonth((m) => ({
-          ...m,
-          debts: (m.debts ?? []).filter((d) => d.id !== tempId),
-        }))
+        setDebts((prev) => prev.filter((d) => d.id !== tempId))
         setError(err instanceof Error ? err.message : "Failed to add debt")
         console.error("Error adding debt:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const removeDebt = useCallback(
     async (id: string) => {
       let removedDebt: DebtEntry | null = null
-      updateActiveMonth((m) => {
-        removedDebt = (m.debts ?? []).find((d) => d.id === id) ?? null
-        return { ...m, debts: (m.debts ?? []).filter((d) => d.id !== id) }
+      setDebts((prev) => {
+        removedDebt = prev.find((d) => d.id === id) ?? null
+        return prev.filter((d) => d.id !== id)
       })
-
       try {
-        const res = await fetch(
-          `${API_URL}/month-data/${activeMonthId}/debts/${id}`,
-          { method: "DELETE", headers: authHeaders() }
-        )
+        const res = await fetch(`${API_URL}/debts/${id}`, { method: "DELETE", headers: authHeaders() })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (removedDebt) {
-          updateActiveMonth((m) => ({
-            ...m,
-            debts: [...(m.debts ?? []), removedDebt!],
-          }))
-        }
+        if (removedDebt) setDebts((prev) => [...prev, removedDebt!])
         setError(err instanceof Error ? err.message : "Failed to remove debt")
         console.error("Error removing debt:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const updateDebt = useCallback(
     async (debt: DebtEntry) => {
       let previousDebt: DebtEntry | null = null
-      updateActiveMonth((m) => {
-        previousDebt = (m.debts ?? []).find((d) => d.id === debt.id) ?? null
-        return {
-          ...m,
-          debts: (m.debts ?? []).map((d) => (d.id === debt.id ? debt : d)),
-        }
+      setDebts((prev) => {
+        previousDebt = prev.find((d) => d.id === debt.id) ?? null
+        return prev.map((d) => (d.id === debt.id ? debt : d))
       })
-
       try {
-        const res = await fetch(
-          `${API_URL}/month-data/${activeMonthId}/debts/${debt.id}`,
-          {
-            method: "PUT",
-            headers: authHeaders(),
-            body: JSON.stringify(debt),
-          }
-        )
+        const res = await fetch(`${API_URL}/debts/${debt.id}`, {
+          method: "PUT",
+          headers: authHeaders(),
+          body: JSON.stringify(debt),
+        })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (previousDebt) {
-          updateActiveMonth((m) => ({
-            ...m,
-            debts: (m.debts ?? []).map((d) => (d.id === debt.id ? previousDebt! : d)),
-          }))
-        }
+        if (previousDebt) setDebts((prev) => prev.map((d) => (d.id === debt.id ? previousDebt! : d)))
         setError(err instanceof Error ? err.message : "Failed to update debt")
         console.error("Error updating debt:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const addExtraFund = useCallback(
     async (fund: Omit<ExtraFund, "id" | "items">) => {
       const tempId = `fund-temp-${Date.now()}`
       const tempFund: ExtraFund = { ...fund, id: tempId, items: [] }
-      updateActiveMonth((m) => ({
-        ...m,
-        extraFunds: [...(m.extraFunds ?? []), tempFund],
-      }))
+      setExtraFunds((prev) => [...prev, tempFund])
       try {
-        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/extra-funds`, {
+        const res = await fetch(`${API_URL}/extra-funds`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify(fund),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         const serverFund: ExtraFund = await res.json()
-        updateActiveMonth((m) => ({
-          ...m,
-          extraFunds: (m.extraFunds ?? []).map((f) => (f.id === tempId ? serverFund : f)),
-        }))
+        setExtraFunds((prev) => prev.map((f) => (f.id === tempId ? serverFund : f)))
       } catch (err) {
-        updateActiveMonth((m) => ({
-          ...m,
-          extraFunds: (m.extraFunds ?? []).filter((f) => f.id !== tempId),
-        }))
+        setExtraFunds((prev) => prev.filter((f) => f.id !== tempId))
         setError(err instanceof Error ? err.message : "Failed to add extra fund")
         console.error("Error adding extra fund:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const removeExtraFund = useCallback(
     async (fundId: string) => {
       let removed: ExtraFund | null = null
-      updateActiveMonth((m) => {
-        removed = (m.extraFunds ?? []).find((f) => f.id === fundId) ?? null
-        return { ...m, extraFunds: (m.extraFunds ?? []).filter((f) => f.id !== fundId) }
+      setExtraFunds((prev) => {
+        removed = prev.find((f) => f.id === fundId) ?? null
+        return prev.filter((f) => f.id !== fundId)
       })
       try {
-        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/extra-funds/${fundId}`, {
+        const res = await fetch(`${API_URL}/extra-funds/${fundId}`, {
           method: "DELETE",
           headers: authHeaders(),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (removed) {
-          updateActiveMonth((m) => ({
-            ...m,
-            extraFunds: [...(m.extraFunds ?? []), removed!],
-          }))
-        }
+        if (removed) setExtraFunds((prev) => [...prev, removed!])
         setError(err instanceof Error ? err.message : "Failed to remove extra fund")
         console.error("Error removing extra fund:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const updateExtraFundMeta = useCallback(
     async (fund: Omit<ExtraFund, "items"> & { id: string }) => {
       let prev: ExtraFund | null = null
-      updateActiveMonth((m) => {
-        prev = (m.extraFunds ?? []).find((f) => f.id === fund.id) ?? null
-        return {
-          ...m,
-          extraFunds: (m.extraFunds ?? []).map((f) =>
-            f.id === fund.id ? { ...f, ...fund } : f
-          ),
-        }
+      setExtraFunds((prevList) => {
+        prev = prevList.find((f) => f.id === fund.id) ?? null
+        return prevList.map((f) => f.id === fund.id ? { ...f, ...fund } : f)
       })
       try {
         const { id, ...updates } = fund
-        const res = await fetch(`${API_URL}/month-data/${activeMonthId}/extra-funds/${id}`, {
+        const res = await fetch(`${API_URL}/extra-funds/${id}`, {
           method: "PUT",
           headers: authHeaders(),
           body: JSON.stringify(updates),
         })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (prev) {
-          updateActiveMonth((m) => ({
-            ...m,
-            extraFunds: (m.extraFunds ?? []).map((f) => (f.id === fund.id ? prev! : f)),
-          }))
-        }
+        if (prev) setExtraFunds((prevList) => prevList.map((f) => (f.id === fund.id ? prev! : f)))
         setError(err instanceof Error ? err.message : "Failed to update extra fund")
         console.error("Error updating extra fund:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const addExtraFundItem = useCallback(
     async (fundId: string, item: Omit<ExtraFundItem, "id" | "subitems">) => {
       const tempId = `fund-item-temp-${Date.now()}`
       const tempItem: ExtraFundItem = { ...item, id: tempId, subitems: [] }
-      updateActiveMonth((m) => ({
-        ...m,
-        extraFunds: (m.extraFunds ?? []).map((f) =>
-          f.id === fundId ? { ...f, items: [...f.items, tempItem] } : f
-        ),
-      }))
+      setExtraFunds((prev) =>
+        prev.map((f) => f.id === fundId ? { ...f, items: [...f.items, tempItem] } : f)
+      )
       try {
-        const res = await fetch(
-          `${API_URL}/month-data/${activeMonthId}/extra-funds/${fundId}/items`,
-          { method: "POST", headers: authHeaders(), body: JSON.stringify(item) }
-        )
+        const res = await fetch(`${API_URL}/extra-funds/${fundId}/items`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(item),
+        })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
         const serverItem: ExtraFundItem = await res.json()
-        updateActiveMonth((m) => ({
-          ...m,
-          extraFunds: (m.extraFunds ?? []).map((f) =>
+        setExtraFunds((prev) =>
+          prev.map((f) =>
             f.id === fundId
               ? { ...f, items: f.items.map((i) => (i.id === tempId ? serverItem : i)) }
               : f
-          ),
-        }))
+          )
+        )
       } catch (err) {
-        updateActiveMonth((m) => ({
-          ...m,
-          extraFunds: (m.extraFunds ?? []).map((f) =>
-            f.id === fundId ? { ...f, items: f.items.filter((i) => i.id !== tempId) } : f
-          ),
-        }))
+        setExtraFunds((prev) =>
+          prev.map((f) => f.id === fundId ? { ...f, items: f.items.filter((i) => i.id !== tempId) } : f)
+        )
         setError(err instanceof Error ? err.message : "Failed to add item to extra fund")
         console.error("Error adding extra fund item:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const removeExtraFundItem = useCallback(
     async (fundId: string, itemId: string) => {
       let removedItem: ExtraFundItem | null = null
-      updateActiveMonth((m) => ({
-        ...m,
-        extraFunds: (m.extraFunds ?? []).map((f) => {
+      setExtraFunds((prev) =>
+        prev.map((f) => {
           if (f.id !== fundId) return f
           removedItem = f.items.find((i) => i.id === itemId) ?? null
           return { ...f, items: f.items.filter((i) => i.id !== itemId) }
-        }),
-      }))
+        })
+      )
       try {
-        const res = await fetch(
-          `${API_URL}/month-data/${activeMonthId}/extra-funds/${fundId}/items/${itemId}`,
-          { method: "DELETE", headers: authHeaders() }
-        )
+        const res = await fetch(`${API_URL}/extra-funds/${fundId}/items/${itemId}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (removedItem) {
-          updateActiveMonth((m) => ({
-            ...m,
-            extraFunds: (m.extraFunds ?? []).map((f) =>
-              f.id === fundId ? { ...f, items: [...f.items, removedItem!] } : f
-            ),
-          }))
-        }
+        if (removedItem)
+          setExtraFunds((prev) =>
+            prev.map((f) => f.id === fundId ? { ...f, items: [...f.items, removedItem!] } : f)
+          )
         setError(err instanceof Error ? err.message : "Failed to remove extra fund item")
         console.error("Error removing extra fund item:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const updateExtraFundItem = useCallback(
     async (fundId: string, item: ExtraFundItem) => {
       let prevItem: ExtraFundItem | null = null
-      updateActiveMonth((m) => ({
-        ...m,
-        extraFunds: (m.extraFunds ?? []).map((f) => {
+      setExtraFunds((prev) =>
+        prev.map((f) => {
           if (f.id !== fundId) return f
           prevItem = f.items.find((i) => i.id === item.id) ?? null
           return { ...f, items: f.items.map((i) => (i.id === item.id ? item : i)) }
-        }),
-      }))
+        })
+      )
       try {
         const { id, ...updates } = item
-        const res = await fetch(
-          `${API_URL}/month-data/${activeMonthId}/extra-funds/${fundId}/items/${id}`,
-          { method: "PUT", headers: authHeaders(), body: JSON.stringify(updates) }
-        )
+        const res = await fetch(`${API_URL}/extra-funds/${fundId}/items/${id}`, {
+          method: "PUT",
+          headers: authHeaders(),
+          body: JSON.stringify(updates),
+        })
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
       } catch (err) {
-        if (prevItem) {
-          updateActiveMonth((m) => ({
-            ...m,
-            extraFunds: (m.extraFunds ?? []).map((f) =>
+        if (prevItem)
+          setExtraFunds((prev) =>
+            prev.map((f) =>
               f.id === fundId
                 ? { ...f, items: f.items.map((i) => (i.id === item.id ? prevItem! : i)) }
                 : f
-            ),
-          }))
-        }
+            )
+          )
         setError(err instanceof Error ? err.message : "Failed to update extra fund item")
         console.error("Error updating extra fund item:", err)
       }
     },
-    [updateActiveMonth, activeMonthId]
+    []
   )
 
   const updateSalary = useCallback(
@@ -1268,6 +1191,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         isLoading,
         error,
         subcategories,
+        savings,
+        debts,
+        extraFunds,
         setActiveMonthId,
         addMonth,
         deleteMonth,

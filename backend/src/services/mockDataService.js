@@ -3,13 +3,20 @@ const path = require('path');
 
 const mockDataPath = path.join(__dirname, '../../data/mock.json');
 const subcategoriesPath = path.join(__dirname, '../../data/subcategories.json');
+const userSavingsPath = path.join(__dirname, '../../data/user-savings.json');
+const userDebtsPath = path.join(__dirname, '../../data/user-debts.json');
+const userExtraFundsPath = path.join(__dirname, '../../data/user-extra-funds.json');
 
 class MockDataService {
   constructor() {
     this.months = [];
     this.subcategories = null;
+    this.userSavings = [];
+    this.userDebts = [];
+    this.userExtraFunds = [];
     this.loadData();
     this.loadSubcategories();
+    this.loadUserData();
   }
 
   loadData() {
@@ -49,6 +56,166 @@ class MockDataService {
       console.error('Error saving subcategories:', error.message);
       throw error;
     }
+  }
+
+  loadUserData() {
+    try {
+      this.userSavings = JSON.parse(fs.readFileSync(userSavingsPath, 'utf8'));
+    } catch { this.userSavings = []; }
+    try {
+      this.userDebts = JSON.parse(fs.readFileSync(userDebtsPath, 'utf8'));
+    } catch { this.userDebts = []; }
+    try {
+      this.userExtraFunds = JSON.parse(fs.readFileSync(userExtraFundsPath, 'utf8'));
+    } catch { this.userExtraFunds = []; }
+  }
+
+  saveUserSavings() {
+    fs.writeFileSync(userSavingsPath, JSON.stringify(this.userSavings, null, 2), 'utf8');
+  }
+
+  saveUserDebts() {
+    fs.writeFileSync(userDebtsPath, JSON.stringify(this.userDebts, null, 2), 'utf8');
+  }
+
+  saveUserExtraFunds() {
+    fs.writeFileSync(userExtraFundsPath, JSON.stringify(this.userExtraFunds, null, 2), 'utf8');
+  }
+
+  // User-level Savings
+  getUserSavings() { return this.userSavings; }
+
+  createUserSaving(saving) {
+    const newSaving = {
+      id: `saving-${Date.now()}`,
+      name: saving.name || 'Ahorro',
+      amount: saving.amount || 0,
+      date: saving.date || new Date().toISOString().split('T')[0],
+    };
+    this.userSavings.push(newSaving);
+    this.saveUserSavings();
+    return newSaving;
+  }
+
+  updateUserSaving(savingId, updates) {
+    const idx = this.userSavings.findIndex(s => s.id === savingId);
+    if (idx === -1) return null;
+    this.userSavings[idx] = { ...this.userSavings[idx], ...updates };
+    this.saveUserSavings();
+    return this.userSavings[idx];
+  }
+
+  deleteUserSaving(savingId) {
+    const idx = this.userSavings.findIndex(s => s.id === savingId);
+    if (idx === -1) return false;
+    this.userSavings.splice(idx, 1);
+    this.saveUserSavings();
+    return true;
+  }
+
+  // User-level Debts
+  getUserDebts() { return this.userDebts; }
+
+  createUserDebt(debt) {
+    const newDebt = {
+      id: `debt-${Date.now()}`,
+      name: debt.name || 'Deuda',
+      principal: debt.principal || 0,
+      monthlyPayment: debt.monthlyPayment || 0,
+      installments: debt.installments || 1,
+      interestRate: debt.interestRate || 0,
+      startDate: debt.startDate || new Date().toISOString().split('T')[0],
+      timeline: debt.timeline || 'mediano',
+    };
+    this.userDebts.push(newDebt);
+    this.saveUserDebts();
+    return newDebt;
+  }
+
+  updateUserDebt(debtId, updates) {
+    const idx = this.userDebts.findIndex(d => d.id === debtId);
+    if (idx === -1) return null;
+    this.userDebts[idx] = { ...this.userDebts[idx], ...updates };
+    this.saveUserDebts();
+    return this.userDebts[idx];
+  }
+
+  deleteUserDebt(debtId) {
+    const idx = this.userDebts.findIndex(d => d.id === debtId);
+    if (idx === -1) return false;
+    this.userDebts.splice(idx, 1);
+    this.saveUserDebts();
+    return true;
+  }
+
+  // User-level ExtraFunds
+  getUserExtraFunds() { return this.userExtraFunds; }
+
+  createUserExtraFund(fund) {
+    const newFund = {
+      id: `fund-${Date.now()}`,
+      name: fund.name || 'Ingreso Extra',
+      totalAmount: fund.totalAmount || 0,
+      source: fund.source || 'otro',
+      date: fund.date || new Date().toISOString().split('T')[0],
+      items: [],
+    };
+    this.userExtraFunds.push(newFund);
+    this.saveUserExtraFunds();
+    return newFund;
+  }
+
+  updateUserExtraFund(fundId, updates) {
+    const idx = this.userExtraFunds.findIndex(f => f.id === fundId);
+    if (idx === -1) return null;
+    this.userExtraFunds[idx] = { ...this.userExtraFunds[idx], ...updates };
+    this.saveUserExtraFunds();
+    return this.userExtraFunds[idx];
+  }
+
+  deleteUserExtraFund(fundId) {
+    const idx = this.userExtraFunds.findIndex(f => f.id === fundId);
+    if (idx === -1) return false;
+    this.userExtraFunds.splice(idx, 1);
+    this.saveUserExtraFunds();
+    return true;
+  }
+
+  createUserExtraFundItem(fundId, item) {
+    const fund = this.userExtraFunds.find(f => f.id === fundId);
+    if (!fund) return null;
+    if (!fund.items) fund.items = [];
+    const newItem = {
+      id: `fund-item-${Date.now()}`,
+      name: item.name || 'Asignación',
+      amount: item.amount || 0,
+      icon: item.icon || null,
+      note: item.note || null,
+      subitems: [],
+    };
+    fund.items.push(newItem);
+    this.saveUserExtraFunds();
+    return newItem;
+  }
+
+  updateUserExtraFundItem(fundId, itemId, updates) {
+    const fund = this.userExtraFunds.find(f => f.id === fundId);
+    if (!fund) return null;
+    const idx = (fund.items || []).findIndex(i => i.id === itemId);
+    if (idx === -1) return null;
+    fund.items[idx] = { ...fund.items[idx], ...updates };
+    this.saveUserExtraFunds();
+    return fund.items[idx];
+  }
+
+  deleteUserExtraFundItem(fundId, itemId) {
+    const fund = this.userExtraFunds.find(f => f.id === fundId);
+    if (!fund) return false;
+    const idx = (fund.items || []).findIndex(i => i.id === itemId);
+    if (idx === -1) return false;
+    fund.items.splice(idx, 1);
+    this.saveUserExtraFunds();
+    return true;
   }
 
   getAll() {
